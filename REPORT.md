@@ -157,7 +157,7 @@ com.google.accompanist:accompanist-permissions:0.34.0
 2. Create a new project or select existing
 3. Enable Maps SDK for Android
 4. Create API credentials
-5. Replace `YOUR_API_KEY_HERE` in AndroidManifest.xml
+5. Add the key to ignored `local.properties` as `MAPS_API_KEY=your_key_here`
 
 ## 6. References
 

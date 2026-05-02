@@ -1,6 +1,12 @@
 package com.safesteps.app.screens
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,10 +48,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import com.safesteps.app.R
 import com.safesteps.app.data.Contact
 import com.safesteps.app.data.ContactsRepository
+import com.safesteps.app.ui.components.EmptyStateMessage
 import com.safesteps.app.ui.theme.EmergencyRed
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -53,7 +63,7 @@ import java.util.UUID
 @Composable
 fun ContactsScreen() {
     val context = LocalContext.current
-    val repository = remember { ContactsRepository(context) }
+    val repository = remember { ContactsRepository(context.applicationContext) }
     val contacts by repository.contacts.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
@@ -64,7 +74,7 @@ fun ContactsScreen() {
             TopAppBar(
                 title = {
                     Text(
-                        "Emergency Contacts",
+                        stringResource(id = R.string.contacts_title),
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -75,7 +85,10 @@ fun ContactsScreen() {
                 onClick = { showAddDialog = true },
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Contact")
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(id = R.string.add_contact)
+                )
             }
         }
     ) { paddingValues ->
@@ -83,25 +96,26 @@ fun ContactsScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = dimensionResource(id = R.dimen.screen_horizontal_padding))
         ) {
             Text(
-                text = "Manage your emergency contacts who will be notified when you trigger an SOS alert.",
+                text = stringResource(id = R.string.contacts_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen.spacing_small))
             )
 
             if (contacts.isEmpty()) {
                 EmptyContactsView()
             } else {
                 LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small)),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(contacts) { contact ->
                         ContactCard(
                             contact = contact,
+                            onCall = { openContactDialer(context, contact.phoneNumber) },
                             onDelete = {
                                 scope.launch {
                                     repository.deleteContact(contact.id)
@@ -137,30 +151,14 @@ fun ContactsScreen() {
 
 @Composable
 private fun EmptyContactsView() {
-    Column(
+    Box(
         modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier
-                .height(80.dp)
-                .width(80.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No Emergency Contacts",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "Tap the + button to add contacts",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 8.dp)
+        EmptyStateMessage(
+            titleRes = R.string.no_contacts,
+            bodyRes = R.string.add_contacts_hint,
+            icon = Icons.Default.Person
         )
     }
 }
@@ -168,16 +166,19 @@ private fun EmptyContactsView() {
 @Composable
 private fun ContactCard(
     contact: Contact,
+    onCall: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = dimensionResource(id = R.dimen.contact_card_elevation)
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(dimensionResource(id = R.dimen.spacing_large)),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
@@ -192,12 +193,12 @@ private fun ContactCard(
                         fontWeight = FontWeight.Bold
                     )
                     if (contact.isPrimary) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_small)))
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = "Primary Contact",
+                            contentDescription = stringResource(id = R.string.primary_contact_desc),
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.height(16.dp)
+                            modifier = Modifier.height(dimensionResource(id = R.dimen.primary_icon_size))
                         )
                     }
                 }
@@ -214,10 +215,18 @@ private fun ContactCard(
                     )
                 }
             }
+            IconButton(onClick = onCall) {
+                Icon(
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = stringResource(id = R.string.call_contact),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.height(dimensionResource(id = R.dimen.contact_action_icon_size))
+                )
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(id = R.string.delete_contact),
                     tint = EmergencyRed
                 )
             }
@@ -237,37 +246,37 @@ private fun AddContactDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Emergency Contact") },
+        title = { Text(stringResource(id = R.string.add_contact_title)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name *") },
+                    label = { Text(stringResource(id = R.string.label_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone Number *") },
+                    label = { Text(stringResource(id = R.string.label_phone)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
                 OutlinedTextField(
                     value = relationship,
                     onValueChange = { relationship = it },
-                    label = { Text("Relationship (optional)") },
+                    label = { Text(stringResource(id = R.string.label_relationship)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Primary Contact")
+                    Text(stringResource(id = R.string.label_primary))
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
                         checked = isPrimary,
@@ -281,13 +290,38 @@ private fun AddContactDialog(
                 onClick = { onAdd(name, phone, relationship, isPrimary) },
                 enabled = name.isNotBlank() && phone.isNotBlank()
             ) {
-                Text("Add")
+                Text(stringResource(id = R.string.btn_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(id = R.string.btn_cancel))
             }
         }
     )
+}
+
+private fun openContactDialer(context: Context, phoneNumber: String) {
+    if (phoneNumber.none { it.isDigit() }) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.invalid_phone_number),
+            Toast.LENGTH_LONG
+        ).show()
+        return
+    }
+
+    val intent = Intent(Intent.ACTION_DIAL).apply {
+        data = Uri.parse("tel:${Uri.encode(phoneNumber)}")
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (exception: ActivityNotFoundException) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.alert_app_missing),
+            Toast.LENGTH_LONG
+        ).show()
+    }
 }

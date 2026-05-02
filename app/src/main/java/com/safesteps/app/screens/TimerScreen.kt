@@ -1,5 +1,10 @@
 package com.safesteps.app.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -7,34 +12,45 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.safesteps.app.R
-import com.safesteps.app.data.Constants
+import com.safesteps.app.ui.components.SafeStepsPrimaryButton
+import com.safesteps.app.utils.TimerConstants
 
 @Composable
-fun TimerScreen() {
-    var timerValue by remember { mutableFloatStateOf(Constants.DEFAULT_TIMER_MINUTES.toFloat()) }
-    var isRunning by remember { mutableStateOf(false) }
+fun TimerScreen(
+    selectedMinutes: Int,
+    remainingSeconds: Int,
+    isRunning: Boolean,
+    recentDurations: List<Int>,
+    onDurationSelected: (Int) -> Unit,
+    onStartTimer: () -> Unit,
+    onCancelTimer: () -> Unit
+) {
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = {}
+    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(dimensionResource(id = R.dimen.screen_timer_padding)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -49,63 +65,93 @@ fun TimerScreen() {
             text = stringResource(id = R.string.timer_desc),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_large))
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_huge)))
 
-        // Timer Selection UI (Complexity Improvement)
         Text(
-            text = stringResource(id = R.string.timer_duration_label, timerValue.toInt()),
+            text = stringResource(id = R.string.timer_duration_label, selectedMinutes),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Medium
         )
 
         Slider(
-            value = timerValue,
-            onValueChange = { timerValue = it },
-            valueRange = 5f..Constants.MAX_TIMER_MINUTES.toFloat(),
-            steps = 23, // 5 minute increments
+            value = selectedMinutes.toFloat(),
+            onValueChange = { value -> onDurationSelected(value.toInt()) },
+            valueRange = TimerConstants.MinimumTimerDurationMinutes.toFloat()..
+                TimerConstants.MaximumTimerDurationMinutes.toFloat(),
+            steps = TimerConstants.SliderSteps,
+            enabled = !isRunning,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            enabled = !isRunning
+                .padding(vertical = dimensionResource(id = R.dimen.spacing_large))
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = { isRunning = !isRunning },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-        ) {
+        if (recentDurations.isNotEmpty()) {
             Text(
-                text = if (isRunning) 
-                    stringResource(id = R.string.btn_stop_timer) 
-                else 
-                    stringResource(id = R.string.btn_start_timer)
+                text = stringResource(id = R.string.timer_recent_durations),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.fillMaxWidth()
             )
+
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = dimensionResource(id = R.dimen.spacing_small)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small))
+            ) {
+                items(recentDurations) { minutes ->
+                    OutlinedButton(
+                        onClick = { onDurationSelected(minutes) },
+                        enabled = !isRunning
+                    ) {
+                        Text(text = stringResource(id = R.string.timer_recent_duration, minutes))
+                    }
+                }
+            }
         }
 
+        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_xlarge)))
+
+        SafeStepsPrimaryButton(
+            textRes = if (isRunning) R.string.btn_stop_timer else R.string.btn_start_timer,
+            onClick = {
+                if (isRunning) {
+                    onCancelTimer()
+                } else {
+                    requestNotificationPermissionIfNeeded(context, notificationPermissionLauncher)
+                    onStartTimer()
+                }
+            }
+        )
+
         if (isRunning) {
+            val minutes = remainingSeconds / TimerConstants.SecondsPerMinute
+            val seconds = remainingSeconds % TimerConstants.SecondsPerMinute
             Text(
-                text = stringResource(id = R.string.timer_running),
+                text = stringResource(id = R.string.timer_remaining_time, minutes, seconds),
                 color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(top = 16.dp),
+                modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_large)),
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_xxlarge)))
 
     }
 }
 
-// prompt used:
-// I am implementing a Safety Timer feature in an Android app using
-// Jetpack Compose. I currently have a TimerScreen with a slider to select
-// duration and a start/stop button controlled by a Boolean state. how should
-// I structure the interaction between the Compose state (isRunning, timerValue)
-// and a background service so that the timer remains consistent and can trigger
-// an action when it finishes?
+private fun requestNotificationPermissionIfNeeded(
+    context: android.content.Context,
+    launcher: androidx.activity.result.ActivityResultLauncher<String>
+) {
+    if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+}

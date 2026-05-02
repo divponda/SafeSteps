@@ -12,9 +12,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import com.safesteps.app.utils.ContactStorageConstants
 
-// Extension property for DataStore
-val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "contacts_preferences")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = ContactStorageConstants.PreferencesName
+)
 
 @Serializable
 data class ContactSerializable(
@@ -27,11 +29,11 @@ data class ContactSerializable(
 
 class ContactsRepository(private val context: Context) {
 
-    private val CONTACTS_KEY = stringPreferencesKey("emergency_contacts")
+    private val contactsKey = stringPreferencesKey(ContactStorageConstants.EmergencyContactsKey)
 
     val contacts: Flow<List<Contact>> = context.dataStore.data
         .map { preferences ->
-            val contactsJson = preferences[CONTACTS_KEY] ?: "[]"
+            val contactsJson = preferences[contactsKey] ?: ContactStorageConstants.EmptyContactsJson
             try {
                 val serializableContacts = Json.decodeFromString<List<ContactSerializable>>(contactsJson)
                 serializableContacts.map { it.toContact() }
@@ -42,33 +44,33 @@ class ContactsRepository(private val context: Context) {
 
     suspend fun addContact(contact: Contact) {
         context.dataStore.edit { preferences ->
-            val currentContactsJson = preferences[CONTACTS_KEY] ?: "[]"
+            val currentContactsJson = preferences[contactsKey] ?: ContactStorageConstants.EmptyContactsJson
             val currentContacts = try {
                 Json.decodeFromString<List<ContactSerializable>>(currentContactsJson)
             } catch (e: Exception) {
                 emptyList()
             }
             val updatedContacts = currentContacts + contact.toSerializable()
-            preferences[CONTACTS_KEY] = Json.encodeToString(updatedContacts)
+            preferences[contactsKey] = Json.encodeToString(updatedContacts)
         }
     }
 
     suspend fun deleteContact(contactId: String) {
         context.dataStore.edit { preferences ->
-            val currentContactsJson = preferences[CONTACTS_KEY] ?: "[]"
+            val currentContactsJson = preferences[contactsKey] ?: ContactStorageConstants.EmptyContactsJson
             val currentContacts = try {
                 Json.decodeFromString<List<ContactSerializable>>(currentContactsJson)
             } catch (e: Exception) {
                 emptyList()
             }
             val updatedContacts = currentContacts.filter { it.id != contactId }
-            preferences[CONTACTS_KEY] = Json.encodeToString(updatedContacts)
+            preferences[contactsKey] = Json.encodeToString(updatedContacts)
         }
     }
 
     suspend fun updateContact(updatedContact: Contact) {
         context.dataStore.edit { preferences ->
-            val currentContactsJson = preferences[CONTACTS_KEY] ?: "[]"
+            val currentContactsJson = preferences[contactsKey] ?: ContactStorageConstants.EmptyContactsJson
             val currentContacts = try {
                 Json.decodeFromString<List<ContactSerializable>>(currentContactsJson)
             } catch (e: Exception) {
@@ -77,7 +79,7 @@ class ContactsRepository(private val context: Context) {
             val updatedContacts = currentContacts.map {
                 if (it.id == updatedContact.id) updatedContact.toSerializable() else it
             }
-            preferences[CONTACTS_KEY] = Json.encodeToString(updatedContacts)
+            preferences[contactsKey] = Json.encodeToString(updatedContacts)
         }
     }
 
@@ -101,11 +103,3 @@ class ContactsRepository(private val context: Context) {
         )
     }
 }
-
-// prompt used:
-// using Jetpack DataStore to persist a list of emergency contacts for my project,
-// since DataStore prefers key-value pairs, i need to store my list as a
-// serialized JSON string. Can you explain the logic for using Kotlin
-// serialization to transform my List<Contact> into a string for storage and
-// then back into a Flow<List<Contact>> for the UI? I want to ensure the
-// data remains reactive so the UI updates immediately when a contact is added.

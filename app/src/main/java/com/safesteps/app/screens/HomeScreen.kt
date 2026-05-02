@@ -1,8 +1,10 @@
 package com.safesteps.app.screens
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
@@ -19,14 +21,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,39 +38,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.safesteps.app.R
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.android.gms.location.LocationServices
+import com.safesteps.app.data.Contact
+import com.safesteps.app.data.ContactsRepository
+import com.safesteps.app.ui.components.SafeStepsCard
 import com.safesteps.app.ui.theme.EmergencyRed
 import com.safesteps.app.ui.theme.EmergencyRedDark
+import com.safesteps.app.utils.AnimationConstants
+import com.safesteps.app.utils.AppConstants
+import com.safesteps.app.utils.LocationConstants
+import java.util.Locale
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
+    val repository = remember { ContactsRepository(context.applicationContext) }
+    val contacts by repository.contacts.collectAsState(initial = emptyList())
     var isAlertTriggered by remember { mutableStateOf(false) }
-
-    val smsPermissionState = rememberPermissionState(
-        permission = Manifest.permission.SEND_SMS
-    )
+    var showSosDialog by remember { mutableStateOf(false) }
     val locationPermissionState = rememberPermissionState(
         permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     val scale by animateFloatAsState(
-        targetValue = if (isAlertTriggered) 0.95f else 1f,
+        targetValue = if (isAlertTriggered) {
+            AnimationConstants.SosPressedScale
+        } else {
+            AnimationConstants.SosDefaultScale
+        },
         label = "sos_scale"
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(dimensionResource(id = R.dimen.screen_horizontal_padding)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -79,19 +93,33 @@ fun HomeScreen() {
             scale = scale,
             onSosClick = {
                 isAlertTriggered = true
-                triggerSOSAlert(context, smsPermissionState.status.isGranted)
-                // Reset after animation
+                showSosDialog = true
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     isAlertTriggered = false
-                }, 200)
+                }, AnimationConstants.SosResetDelayMillis)
             }
         )
 
         // Quick Actions Card
         QuickActionsSection(
             context = context,
-            isLocationGranted = locationPermissionState.status.isGranted
+            isLocationGranted = locationPermissionState.status.isGranted,
+            onRequestLocationPermission = { locationPermissionState.launchPermissionRequest() }
         )
+
+        if (showSosDialog) {
+            SosConfirmationDialog(
+                onDismiss = { showSosDialog = false },
+                onConfirm = {
+                    showSosDialog = false
+                    triggerSOSAlert(
+                        context = context,
+                        contacts = contacts,
+                        hasLocationPermission = locationPermissionState.status.isGranted
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -99,7 +127,7 @@ fun HomeScreen() {
 private fun ColumnScope.HeaderSection() {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(top = 32.dp)
+        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.home_header_top_padding))
     ) {
         Text(
             text = stringResource(id = R.string.app_name),
@@ -111,7 +139,7 @@ private fun ColumnScope.HeaderSection() {
             text = stringResource(id = R.string.tagline),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
         )
     }
 }
@@ -127,15 +155,15 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
         Button(
             onClick = onSosClick,
             modifier = Modifier
-                .size(200.dp)
+                .size(dimensionResource(id = R.dimen.sos_button_size))
                 .scale(scale),
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = EmergencyRed
             ),
             elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 8.dp,
-                pressedElevation = 16.dp
+                defaultElevation = dimensionResource(id = R.dimen.sos_default_elevation),
+                pressedElevation = dimensionResource(id = R.dimen.sos_pressed_elevation)
             )
         ) {
             Column(
@@ -144,9 +172,9 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = stringResource(id = R.string.sos_button),
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(dimensionResource(id = R.dimen.sos_icon_size))
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
                 Text(
                     text = stringResource(id = R.string.sos_button),
                     fontSize = 32.sp,
@@ -162,21 +190,22 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
 }
 
 @Composable
-private fun ColumnScope.QuickActionsSection(context: Context, isLocationGranted: Boolean) {
-    Card(
+private fun ColumnScope.QuickActionsSection(
+    context: Context,
+    isLocationGranted: Boolean,
+    onRequestLocationPermission: () -> Unit
+) {
+    SafeStepsCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(bottom = dimensionResource(id = R.dimen.bottom_card_padding))
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column {
             Text(
                 text = stringResource(id = R.string.quick_actions),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = dimensionResource(id = R.dimen.spacing_medium))
             )
 
             Button(
@@ -189,12 +218,17 @@ private fun ColumnScope.QuickActionsSection(context: Context, isLocationGranted:
                 Text(stringResource(id = R.string.call_emergency))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
 
             Button(
-                onClick = { shareLocation(context) },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = isLocationGranted
+                onClick = {
+                    if (isLocationGranted) {
+                        shareLocation(context)
+                    } else {
+                        onRequestLocationPermission()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     if (isLocationGranted)
@@ -207,38 +241,136 @@ private fun ColumnScope.QuickActionsSection(context: Context, isLocationGranted:
     }
 }
 
-private fun triggerSOSAlert(context: Context, hasSmsPermission: Boolean) {
+@Composable
+private fun SosConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.sos_confirmation_title)) },
+        text = { Text(text = stringResource(id = R.string.sos_confirmation_body)) },
+        confirmButton = {
+            Button(onClick = onConfirm) {
+                Text(text = stringResource(id = R.string.sos_confirm_send))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.btn_cancel))
+            }
+        }
+    )
+}
+
+private fun triggerSOSAlert(
+    context: Context,
+    contacts: List<Contact>,
+    hasLocationPermission: Boolean
+) {
+    if (contacts.isEmpty()) {
+        Toast.makeText(context, context.getString(R.string.sos_no_contacts), Toast.LENGTH_LONG).show()
+        return
+    }
+
     Toast.makeText(context, context.getString(R.string.sos_triggered), Toast.LENGTH_LONG).show()
 
-    if (hasSmsPermission) {
-        Toast.makeText(context, context.getString(R.string.alert_sent), Toast.LENGTH_SHORT).show()
+    if (
+        hasLocationPermission &&
+        androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        LocationServices.getFusedLocationProviderClient(context).lastLocation
+            .addOnSuccessListener { location ->
+                val mapUrl = location?.let {
+                    String.format(
+                        Locale.US,
+                        LocationConstants.GoogleMapsQueryUrl,
+                        it.latitude,
+                        it.longitude
+                    )
+                }
+                openSosMessage(context, contacts, mapUrl)
+            }
+            .addOnFailureListener { openSosMessage(context, contacts, null) }
     } else {
-        Toast.makeText(context, context.getString(R.string.sms_permission_required), Toast.LENGTH_LONG).show()
+        openSosMessage(context, contacts, null)
     }
 }
 
 private fun callEmergencyServices(context: Context) {
     val intent = Intent(Intent.ACTION_DIAL).apply {
-        data = Uri.parse("tel:112")
+        data = Uri.parse("tel:${AppConstants.EmergencyNumber}")
     }
     context.startActivity(intent)
 }
 
 private fun shareLocation(context: Context) {
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_subject))
-        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_body, "0", "0"))
+    if (
+        androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    ) {
+        LocationServices.getFusedLocationProviderClient(context).lastLocation
+            .addOnSuccessListener { location ->
+                val latitude = location?.latitude ?: LocationConstants.DefaultLocation.latitude
+                val longitude = location?.longitude ?: LocationConstants.DefaultLocation.longitude
+                openLocationShare(context, latitude, longitude)
+            }
+            .addOnFailureListener {
+                openLocationShare(
+                    context,
+                    LocationConstants.DefaultLocation.latitude,
+                    LocationConstants.DefaultLocation.longitude
+                )
+            }
     }
-    context.startActivity(Intent.createChooser(shareIntent, "Share Location"))
 }
 
-// prompt used:
-// working on the Safety Timer feature for an app. I have already established a
-// basic SOS alert and SMS permission logic within the HomeScreen.kt specifically
-// the triggerSOSAlert function. help me understand the logic and idea execution
-// for integrating this SMS functionality into the timer? how do i structure the
-// code so that when the timer reaches zero, it triggers the SMS alert
-// automatically. and also, how should I bridge the gap between the ui based SOS
-// button logic and the background-triggered timer event to ensure sms permissions
-// are respected and the alert is sent reliably upon expiry?
+private fun openLocationShare(context: Context, latitude: Double, longitude: Double) {
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = AppConstants.PlainTextMimeType
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_subject))
+        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_body, latitude.toString(), longitude.toString()))
+    }
+    context.startActivity(
+        Intent.createChooser(shareIntent, context.getString(R.string.share_location_chooser))
+    )
+}
+
+private fun openSosMessage(context: Context, contacts: List<Contact>, mapUrl: String?) {
+    val message = if (mapUrl == null) {
+        context.getString(R.string.sos_message_without_location)
+    } else {
+        context.getString(R.string.sos_message_with_location, mapUrl)
+    }
+
+    val phoneNumbers = contacts
+        .sortedByDescending { it.isPrimary }
+        .joinToString(separator = ";") { Uri.encode(it.phoneNumber) }
+
+    val smsIntent = Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("smsto:$phoneNumbers")
+        putExtra("sms_body", message)
+    }
+
+    try {
+        context.startActivity(smsIntent)
+        Toast.makeText(context, context.getString(R.string.alert_ready), Toast.LENGTH_SHORT).show()
+    } catch (exception: ActivityNotFoundException) {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = AppConstants.PlainTextMimeType
+            putExtra(Intent.EXTRA_TEXT, message)
+        }
+        try {
+            context.startActivity(
+                Intent.createChooser(shareIntent, context.getString(R.string.sos_confirm_send))
+            )
+        } catch (fallbackException: ActivityNotFoundException) {
+            Toast.makeText(context, context.getString(R.string.alert_app_missing), Toast.LENGTH_LONG).show()
+        }
+    }
+}
