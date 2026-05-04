@@ -244,7 +244,7 @@ private fun ContactCard(
             IconButton(onClick = onEdit) {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit contact",
+                    contentDescription = stringResource(id = R.string.edit_contact),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.height(dimensionResource(id = R.dimen.contact_action_icon_size))
                 )
@@ -340,7 +340,7 @@ private fun EditContactDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit contact") },
+        title = { Text(stringResource(id = R.string.edit_contact_title)) },
         text = {
             Column {
                 OutlinedTextField(
@@ -393,7 +393,7 @@ private fun EditContactDialog(
                 },
                 enabled = name.isNotBlank() && phone.isNotBlank()
             ) {
-                Text("Save")
+                Text(stringResource(id = R.string.btn_save))
             }
         },
         dismissButton = {

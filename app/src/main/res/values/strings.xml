@@ -95,4 +95,7 @@
     <string name="notification_channel_safety_timer_desc">Check-in alerts from the SafeSteps safety timer.</string>
     <string name="notification_are_you_safe_title">Are you safe?</string>
     <string name="notification_are_you_safe_body">Your SafeSteps timer ended. Please check in or contact help if needed.</string>
+    <string name="edit_contact">Edit contact</string>
+    <string name="edit_contact_title">Edit contact</string>
+    <string name="btn_save">Save</string>
 </resources>
