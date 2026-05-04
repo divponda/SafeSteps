@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Star
@@ -68,6 +69,7 @@ fun ContactsScreen() {
     val scope = rememberCoroutineScope()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingContact by remember { mutableStateOf<Contact?>(null) }
 
     Scaffold(
         topBar = {
@@ -116,6 +118,7 @@ fun ContactsScreen() {
                         ContactCard(
                             contact = contact,
                             onCall = { openContactDialer(context, contact.phoneNumber) },
+                            onEdit = { editingContact = contact },
                             onDelete = {
                                 scope.launch {
                                     repository.deleteContact(contact.id)
@@ -147,6 +150,20 @@ fun ContactsScreen() {
             }
         )
     }
+
+    if (editingContact != null) {
+        val contact = editingContact!!
+        EditContactDialog(
+            contact = contact,
+            onDismiss = { editingContact = null },
+            onSave = { updatedContact ->
+                scope.launch {
+                    repository.updateContact(updatedContact)
+                }
+                editingContact = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -167,6 +184,7 @@ private fun EmptyContactsView() {
 private fun ContactCard(
     contact: Contact,
     onCall: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -219,6 +237,14 @@ private fun ContactCard(
                 Icon(
                     imageVector = Icons.Default.Phone,
                     contentDescription = stringResource(id = R.string.call_contact),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.height(dimensionResource(id = R.dimen.contact_action_icon_size))
+                )
+            }
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit contact",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.height(dimensionResource(id = R.dimen.contact_action_icon_size))
                 )
@@ -291,6 +317,83 @@ private fun AddContactDialog(
                 enabled = name.isNotBlank() && phone.isNotBlank()
             ) {
                 Text(stringResource(id = R.string.btn_add))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.btn_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun EditContactDialog(
+    contact: Contact,
+    onDismiss: () -> Unit,
+    onSave: (Contact) -> Unit
+) {
+    var name by remember { mutableStateOf(contact.name) }
+    var phone by remember { mutableStateOf(contact.phoneNumber) }
+    var relationship by remember { mutableStateOf(contact.relationship) }
+    var isPrimary by remember { mutableStateOf(contact.isPrimary) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit contact") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(id = R.string.label_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(stringResource(id = R.string.label_phone)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
+                OutlinedTextField(
+                    value = relationship,
+                    onValueChange = { relationship = it },
+                    label = { Text(stringResource(id = R.string.label_relationship)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(id = R.string.label_primary))
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = isPrimary,
+                        onCheckedChange = { isPrimary = it }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        contact.copy(
+                            name = name,
+                            phoneNumber = phone,
+                            relationship = relationship,
+                            isPrimary = isPrimary
+                        )
+                    )
+                },
+                enabled = name.isNotBlank() && phone.isNotBlank()
+            ) {
+                Text("Save")
             }
         },
         dismissButton = {
