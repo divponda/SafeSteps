@@ -15,6 +15,8 @@
 
     <dimen name="sos_button_size">200dp</dimen>
     <dimen name="sos_icon_size">48dp</dimen>
+    <dimen name="sos_label_font_size">32sp</dimen>
+    <dimen name="sos_hint_font_size">12sp</dimen>
     <dimen name="empty_state_icon_size">80dp</dimen>
     <dimen name="primary_button_height">56dp</dimen>
     <dimen name="primary_icon_size">16dp</dimen>

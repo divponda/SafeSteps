@@ -24,41 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.safesteps.app.R
-
-@Composable
-fun ScreenHeader(
-    @StringRes titleRes: Int,
-    @StringRes descriptionRes: Int,
-    modifier: Modifier = Modifier,
-    centered: Boolean = true
-) {
-    Column(
-        horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start,
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = stringResource(id = titleRes),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            textAlign = if (centered) TextAlign.Center else TextAlign.Start,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Text(
-            text = stringResource(id = descriptionRes),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = if (centered) TextAlign.Center else TextAlign.Start,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = dimensionResource(id = R.dimen.spacing_small))
-        )
-    }
-}
 
 @Composable
 fun SafeStepsCard(

@@ -20,15 +20,15 @@ object ContactStorageConstants {
 }
 
 object LocationConstants {
-    val DefaultLocation = LatLng(40.4168, -3.7038)
-    val PoliceStationLocation = LatLng(40.4168, -3.7038)
-    val HospitalLocation = LatLng(40.4180, -3.7060)
-    val PharmacyLocation = LatLng(40.4148, -3.7012)
-    val UniversitySecurityLocation = LatLng(40.4230, -3.7074)
-    val PublicLibraryLocation = LatLng(40.4175, -3.7102)
-    val FireStationLocation = LatLng(40.4129, -3.7078)
-    val WellLitAreaLocation = LatLng(40.4154, -3.7070)
-    const val DefaultMapZoom = 14f
+    val DefaultLocation = LatLng(40.3289, -3.7638)           // UC3M Leganés campus
+    val PoliceStationLocation = LatLng(40.3283, -3.7692)     // Comisaría de Leganés
+    val HospitalLocation = LatLng(40.3274, -3.7595)          // Hospital Severo Ochoa
+    val PharmacyLocation = LatLng(40.3296, -3.7621)          // Pharmacy near campus
+    val UniversitySecurityLocation = LatLng(40.3289, -3.7638) // UC3M Security Office
+    val PublicLibraryLocation = LatLng(40.3312, -3.7657)     // Biblioteca Municipal de Leganés
+    val FireStationLocation = LatLng(40.3251, -3.7703)       // Parque de Bomberos de Leganés
+    val WellLitAreaLocation = LatLng(40.3308, -3.7648)       // Plaza de España, Leganés
+    const val DefaultMapZoom = 15f
     const val GoogleMapsQueryUrl = "https://maps.google.com/?q=%1$.6f,%2$.6f"
 }
 

@@ -81,7 +81,7 @@
 
     <!-- Timer Screen -->
     <string name="timer_title">Safety Timer</string>
-    <string name="timer_desc">Set a timer that will automatically alert your contacts if you don\'t check in.</string>
+    <string name="timer_desc">Set a timer. When it expires, you\'ll receive a notification reminding you to check in or call for help.</string>
     <string name="timer_duration_label">Duration (minutes): %1$d</string>
     <string name="timer_remaining_time">Time remaining: %1$02d:%2$02d</string>
     <string name="timer_recent_durations">Recent durations</string>
