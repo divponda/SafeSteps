@@ -21,14 +21,10 @@ object ContactStorageConstants {
 
 object LocationConstants {
     val DefaultLocation = LatLng(40.4168, -3.7038)
-    val PoliceStationLocation = LatLng(40.4168, -3.7038)
-    val HospitalLocation = LatLng(40.4180, -3.7060)
-    val PharmacyLocation = LatLng(40.4148, -3.7012)
-    val UniversitySecurityLocation = LatLng(40.4230, -3.7074)
-    val PublicLibraryLocation = LatLng(40.4175, -3.7102)
-    val FireStationLocation = LatLng(40.4129, -3.7078)
-    val WellLitAreaLocation = LatLng(40.4154, -3.7070)
     const val DefaultMapZoom = 14f
+    const val NearbySearchRadiusMeters = 1_500
+    const val MaxSafePlacesToDisplay = 8
+    const val LocationUpdateIntervalMillis = 30_000L
     const val GoogleMapsQueryUrl = "https://maps.google.com/?q=%1$.6f,%2$.6f"
 }
 

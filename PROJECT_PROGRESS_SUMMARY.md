@@ -27,7 +27,7 @@ This file summarizes the improvements made after the Milestone 2 review, which f
 - Removed the duplicate unused `app/src/res/values/strings.xml` file.
 - Removed old prompt/comment blocks from source files.
 - Kept naming clean and CamelCase throughout the refactor.
-- Added current-location and safe-place map improvements.
+- Added current-location and automatic nearby safe-place map improvements.
 - Moved active timer state above the Timer screen so it survives tab navigation.
 - Added an emergency contact call action using the Android dialer.
 
@@ -100,9 +100,9 @@ Now:
 Status: Working and manually verified
 
 - Safety Map screen uses Google Maps Compose.
-- Demo safe-location markers are shown for police, hospital, pharmacy, university security, public library, fire station, and a well-lit public area.
-- A current-location marker is shown when the last known location is available.
-- A bottom-left Safe Places button opens an editable/reorderable safe-place popup.
+- Demo safe-location markers are shown for police, hospital, pharmacy, fire station, public library, transit station, hotel, and shopping center.
+- A current-location marker is shown when current or last-known location is available.
+- A Nearby Safe Places list appears under the map with distance, category, address, rating/open status, refresh, and navigation actions.
 - Map text and marker labels now come from string resources.
 - Location permission handling was improved.
 - `isMyLocationEnabled` is only enabled when permission is granted, reducing crash risk.
@@ -119,7 +119,7 @@ Now:
 
 Limit:
 
-- Real nearby safe-place search through Places API is not implemented. Current markers are demo markers.
+- Real nearby safe-place search through Places API is not implemented. Current results are demo results generated around the user/default location.
 
 ### Safety Timer
 
@@ -215,12 +215,12 @@ Progress: Complete for final demo
 - Google Maps Compose is integrated.
 - Location permission handling exists.
 - Last-known location is used for sharing/SOS when available.
-- Demo safety markers are shown on the map.
+- Demo safe-place results are generated around the current/default location and shown on the map.
 - Google Maps API key setup has been verified manually.
 
 Remaining:
 
-- Real nearby safe locations through Places API or REST service are not implemented, but this is optional because the app already demonstrates maps/location services.
+- Real nearby safe locations through Places API or REST service are not implemented; the project uses a clearly separated demo repository for final-demo reliability.
 
 ### Requirement Group 3: REST Services
 
@@ -255,7 +255,7 @@ The Milestone 2 report described the app as roughly 30% implemented. Since then:
 - Location sharing is more functional.
 - Map permission handling is safer.
 - Google Maps loading has been verified with a valid API key.
-- Safety Map now communicates safe places more clearly without covering map zoom controls.
+- Safety Map now loads nearby demo safe places automatically and communicates them through pins plus a list.
 - Timer behavior is now stable across tab navigation.
 - Contacts now support calling.
 - Documentation for final submission has been added.
@@ -293,8 +293,8 @@ The Milestone 2 report described the app as roughly 30% implemented. Since then:
 2. SOS confirmation dialog.
 3. Contacts screen with saved emergency contact.
 4. Add Emergency Contact dialog.
-5. Safety Map screen with current location, markers, and Safe Places button.
-6. Safety Map screen showing the Safe Places popup.
+5. Safety Map screen with current location, markers, and Nearby Safe Places list.
+6. Safety Map list item tapped with the camera focused on the selected marker.
 7. Timer screen with a 3-minute countdown running.
 8. Contacts screen showing the call icon.
 9. Timer expiry notification.

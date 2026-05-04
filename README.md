@@ -9,8 +9,8 @@ SafeSteps is a personal safety Android app for quick emergency actions while wal
 - Add, delete, and call emergency contacts
 - Live location sharing through Android share intents
 - Safety map using Google Maps Compose
-- Current-location marker and nearby demo safety markers for police, hospital, pharmacy, fire station, library, university security, and a well-lit public area
-- Bottom-left Safe Places button that opens an editable/reorderable safe-place list
+- Current-location marker and automatic nearby demo safe-place markers for police, hospital, pharmacy, fire station, library, transit station, hotel, and shopping center
+- Nearby Safe Places list with distance, category, address, rating, open status, refresh, and navigation actions
 - Safety timer with minute-by-minute duration selection, recent durations, countdown, cancel/check-in behavior, tab-safe state, and expiry notification
 - Runtime location and notification permission handling
 
@@ -59,6 +59,8 @@ MAPS_API_KEY=your_google_maps_api_key_here
 
 In Google Cloud Console, enable Maps SDK for Android for the key. Without a valid key, the app still builds, but the Google map may not render real tiles.
 
+The current project uses a demo safe-places repository generated around the user's current location. For real live place results, enable Places API / Places SDK for Android and replace the demo repository with a Places-backed repository.
+
 ## Demo Checklist
 
 1. Launch the app on Pixel 4 AVD.
@@ -66,16 +68,17 @@ In Google Cloud Console, enable Maps SDK for Android for the key. Without a vali
 3. Return to Home and tap SOS.
 4. Confirm that the messaging app opens with a SafeSteps emergency message.
 5. Grant location permission and test Share Live Location.
-6. Open Safety Map and verify the current-location marker, blue location dot, safe-place markers, and Safe Places button.
-7. Open the Safe Places popup and test edit/reorder/delete/add.
-8. Start a 3-minute Safety Timer, switch to Contacts, then return to Timer and confirm it is still running.
-9. Cancel the timer, then let another timer expire to verify the local notification.
-10. Use the phone icon on a contact to confirm the Android dialer opens.
-11. Restart the app and confirm saved contacts are still present.
+6. Open Safety Map and verify the current-location marker, blue location dot, safe-place markers, and Nearby Safe Places list.
+7. Tap a safe place in the list and confirm the map focuses on that marker.
+8. Tap Refresh and confirm the list reloads.
+9. Start a 3-minute Safety Timer, switch to Contacts, then return to Timer and confirm it is still running.
+10. Cancel the timer, then let another timer expire to verify the local notification.
+11. Use the phone icon on a contact to confirm the Android dialer opens.
+12. Restart the app and confirm saved contacts are still present.
 
 ## Known Limitations
 
-- Safety map uses demo safe-place markers instead of a live Places API query.
+- Safety map uses demo safe-place results generated around the current/default location instead of live Places API results.
 - Safety timer notification is intended for demo use and is not a full background service.
 - SOS opens the messaging app for user-controlled sending; it does not send SMS automatically.
 - Location sharing uses the last known location when available, with a Madrid fallback for emulator demos.

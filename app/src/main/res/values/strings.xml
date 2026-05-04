@@ -30,22 +30,24 @@
 
     <!-- Map Screen -->
     <string name="safety_map_title">Safety Map</string>
-    <string name="safety_map_desc">Showing nearby police stations and safe locations. Tap on markers for more information.</string>
+    <string name="safety_map_desc">Nearby safe places are loaded from your current location. Tap a place to focus the map.</string>
     <string name="location_permission_message">Enable location permission to show your current position on the map.</string>
     <string name="location_permission_button">Enable Location</string>
     <string name="current_location">Current Location</string>
     <string name="current_location_desc">Your last known location</string>
     <string name="nearby_safe_places">Nearby Safe Places</string>
-    <string name="open_safe_places">Open Safe Places</string>
-    <string name="add_safe_place">Add Safe Place</string>
-    <string name="safe_place_name">Safe place name</string>
-    <string name="safe_place_note">Safe place note</string>
-    <string name="save_safe_place">Save Safe Place</string>
-    <string name="move_safe_place_up">Move Up</string>
-    <string name="move_safe_place_down">Move Down</string>
-    <string name="delete_safe_place">Delete Safe Place</string>
-    <string name="new_safe_place">New Safe Place</string>
-    <string name="new_safe_place_desc">Custom safe place note</string>
+    <string name="refresh_safe_places">Refresh</string>
+    <string name="navigate_to_place">Navigate</string>
+    <string name="loading_safe_places">Loading nearby safe places…</string>
+    <string name="no_safe_places_found">No safe places found nearby.</string>
+    <string name="location_unavailable_message">Current location is unavailable, so SafeSteps is using the default map area.</string>
+    <string name="safe_places_load_error">Could not load nearby safe places. Please try refreshing.</string>
+    <string name="safe_place_marker_snippet">%1$s • %2$s away</string>
+    <string name="distance_meters">%1$d m</string>
+    <string name="distance_kilometers">%1$.1f km</string>
+    <string name="place_rating">Rating: %1$.1f</string>
+    <string name="place_open_now">Open now</string>
+    <string name="place_open_unknown">Hours unavailable</string>
     <string name="police_station">Police Station</string>
     <string name="police_station_desc">National Police Headquarters</string>
     <string name="hospital">Hospital</string>
@@ -60,6 +62,26 @@
     <string name="fire_station_desc">Emergency response location</string>
     <string name="well_lit_area">Well-lit Public Area</string>
     <string name="well_lit_area_desc">Busy open plaza with better visibility</string>
+    <string name="metro_station">Transit Station</string>
+    <string name="metro_station_desc">Busy public transport station</string>
+    <string name="hotel">Hotel</string>
+    <string name="hotel_desc">Staffed public lobby and assistance desk</string>
+    <string name="shopping_center">Shopping Center</string>
+    <string name="shopping_center_desc">High-foot-traffic public area</string>
+    <string name="category_police_station">Police Station</string>
+    <string name="category_hospital">Hospital</string>
+    <string name="category_pharmacy">Pharmacy</string>
+    <string name="category_fire_station">Fire Station</string>
+    <string name="category_library">Library</string>
+    <string name="category_transit_station">Transit Station</string>
+    <string name="category_convenience_store">Convenience Store</string>
+    <string name="category_shopping_center">Shopping Center</string>
+    <string name="category_hotel">Hotel</string>
+    <string name="category_bank">Bank or ATM</string>
+    <string name="category_government_building">Government Building</string>
+    <string name="category_community_center">Community Center</string>
+    <string name="category_embassy">Embassy or Consulate</string>
+    <string name="category_other">Safe Place</string>
 
     <!-- Contacts Screen -->
     <string name="contacts_title">Emergency Contacts</string>

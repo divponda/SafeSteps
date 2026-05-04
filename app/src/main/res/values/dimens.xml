@@ -20,7 +20,8 @@
     <dimen name="primary_icon_size">16dp</dimen>
     <dimen name="contact_action_icon_size">24dp</dimen>
     <dimen name="map_safe_places_max_height">220dp</dimen>
-    <dimen name="map_fab_bottom_padding">24dp</dimen>
+    <dimen name="map_height">360dp</dimen>
+    <dimen name="safe_place_list_max_height">260dp</dimen>
 
     <dimen name="card_elevation">4dp</dimen>
     <dimen name="contact_card_elevation">2dp</dimen>

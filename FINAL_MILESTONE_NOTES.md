@@ -27,7 +27,7 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 - Location sharing action
 - Emergency contacts persistence with DataStore
 - Add/delete/call contacts
-- Safety map with permission handling, current-location marker, safe-place markers, and editable Safe Places popup
+- Safety map with permission handling, current-location marker, automatic nearby safe-place markers, refresh, navigation, and a visible places list
 - Safety timer countdown with minute-by-minute selection, recent durations, tab-safe state, and expiry notification
 - Dark/light theme support
 
@@ -38,7 +38,7 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 3. Contacts screen with at least one saved emergency contact.
 4. Add Emergency Contact dialog.
 5. Safety Map screen with markers and location permission enabled.
-6. Safety Map Safe Places popup.
+6. Safety Map Nearby Safe Places list.
 7. Safety Timer screen while a 3-minute countdown is running.
 8. Contacts screen showing the call icon.
 9. Timer expiry notification in the notification shade.
@@ -51,6 +51,7 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 - Latest `assembleDebug` and `testDebugUnitTest` passed after the map, timer, and contact-call improvements.
 - `lintDebug` started but hung during analysis and was stopped cleanly; run Android Studio lint before final packaging.
 - Safety Map was manually verified by the project owner after adding a valid Google Maps API key.
+- Safety Map currently uses a demo safe-places repository; live Google Places results can be added later by enabling Places API / Places SDK for Android.
 - ADB found no running emulator in this shell session, so remaining full-app manual testing should be completed from Android Studio on the Pixel 4 AVD.
 - On Android 13+, allow notification permission to see timer expiry notifications.
 - Keep `MAPS_API_KEY` in `local.properties` only; do not commit the API key.

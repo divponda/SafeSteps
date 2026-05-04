@@ -1,35 +1,34 @@
 package com.safesteps.app.screens
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,8 +42,12 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
@@ -53,6 +56,9 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.safesteps.app.R
+import com.safesteps.app.data.model.SafePlace
+import com.safesteps.app.data.model.SafePlaceCategory
+import com.safesteps.app.data.repository.DemoSafePlacesRepository
 import com.safesteps.app.ui.components.SafeStepsCard
 import com.safesteps.app.utils.LocationConstants
 
@@ -60,6 +66,9 @@ import com.safesteps.app.utils.LocationConstants
 @Composable
 fun MapScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val safePlacesRepository = remember {
+        DemoSafePlacesRepository(context.applicationContext)
+    }
     val locationPermissionState = rememberPermissionState(
         permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
@@ -70,22 +79,36 @@ fun MapScreen() {
         )
     }
 
-    var isMapLoaded by remember { mutableStateOf(false) }
     val isLocationGranted = locationPermissionState.status.isGranted
+    var isMapLoaded by remember { mutableStateOf(false) }
+    var isLoadingSafePlaces by remember { mutableStateOf(false) }
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
-    var showSafePlacesDialog by remember { mutableStateOf(false) }
-    var safePlaces by rememberDefaultSafePlaces()
+    var mapCenter by remember { mutableStateOf(LocationConstants.DefaultLocation) }
+    var safePlaces by remember { mutableStateOf(emptyList<SafePlace>()) }
+    var statusMessageRes by remember { mutableStateOf<Int?>(null) }
+    var refreshCount by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(isLocationGranted) {
-        if (
-            isLocationGranted &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            LocationServices.getFusedLocationProviderClient(context).lastLocation
-                .addOnSuccessListener { location ->
-                    currentLocation = location?.let { LatLng(it.latitude, it.longitude) }
-                }
+    LaunchedEffect(isLocationGranted, refreshCount) {
+        refreshNearbySafePlaces(
+            context = context,
+            repository = safePlacesRepository,
+            isLocationGranted = isLocationGranted,
+            onLoadingChanged = { isLoadingSafePlaces = it },
+            onCurrentLocationChanged = { currentLocation = it },
+            onMapCenterChanged = { mapCenter = it },
+            onSafePlacesChanged = { safePlaces = it },
+            onStatusMessageChanged = { statusMessageRes = it }
+        )
+    }
+
+    LaunchedEffect(isMapLoaded, mapCenter) {
+        if (isMapLoaded) {
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(
+                    mapCenter,
+                    LocationConstants.DefaultMapZoom
+                )
+            )
         }
     }
 
@@ -108,291 +131,367 @@ fun MapScreen() {
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            properties = properties,
-            uiSettings = uiSettings,
-            onMapLoaded = { isMapLoaded = true }
-        ) {
-            currentLocation?.let { location ->
-                Marker(
-                    state = MarkerState(position = location),
-                    title = stringResource(id = R.string.current_location),
-                    snippet = stringResource(id = R.string.current_location_desc)
-                )
-            }
-
-            safePlaces.forEach { safePlace ->
-                Marker(
-                    state = MarkerState(position = safePlace.location),
-                    title = safePlace.title,
-                    snippet = safePlace.description
-                )
-            }
-        }
-
-        SafeStepsCard(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimensionResource(id = R.dimen.spacing_large))
-                .align(Alignment.TopCenter)
-        ) {
-            Column {
-                Text(
-                    text = stringResource(id = R.string.safety_map_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = stringResource(id = R.string.safety_map_desc),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
-                )
-                if (!isLocationGranted) {
-                    Text(
-                        text = stringResource(id = R.string.location_permission_message),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
-                    )
-                    Button(
-                        onClick = { locationPermissionState.launchPermissionRequest() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = dimensionResource(id = R.dimen.spacing_small))
-                    ) {
-                        Text(text = stringResource(id = R.string.location_permission_button))
-                    }
-                }
-            }
-        }
-
-        FloatingActionButton(
-            onClick = { showSafePlacesDialog = true },
-            modifier = Modifier
-                .padding(
-                    start = dimensionResource(id = R.dimen.spacing_large),
-                    bottom = dimensionResource(id = R.dimen.map_fab_bottom_padding)
-                )
-                .align(Alignment.BottomStart),
-            containerColor = MaterialTheme.colorScheme.primary
-        ) {
-            Icon(
-                imageVector = Icons.Default.Place,
-                contentDescription = stringResource(id = R.string.open_safe_places)
-            )
-        }
-
-        if (!isMapLoaded) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                strokeWidth = dimensionResource(id = R.dimen.spacing_xsmall)
-            )
-        }
-
-        if (showSafePlacesDialog) {
-            SafePlacesDialog(
-                safePlaces = safePlaces,
-                onDismiss = { showSafePlacesDialog = false },
-                onSafePlacesChanged = { safePlaces = it }
-            )
-        }
-    }
-}
-
-@Composable
-private fun rememberDefaultSafePlaces(): androidx.compose.runtime.MutableState<List<SafePlace>> {
-    val policeStation = stringResource(id = R.string.police_station)
-    val policeStationDesc = stringResource(id = R.string.police_station_desc)
-    val hospital = stringResource(id = R.string.hospital)
-    val hospitalDesc = stringResource(id = R.string.hospital_desc)
-    val pharmacy = stringResource(id = R.string.pharmacy)
-    val pharmacyDesc = stringResource(id = R.string.pharmacy_desc)
-    val universitySecurity = stringResource(id = R.string.university_security)
-    val universitySecurityDesc = stringResource(id = R.string.university_security_desc)
-    val publicLibrary = stringResource(id = R.string.public_library)
-    val publicLibraryDesc = stringResource(id = R.string.public_library_desc)
-    val fireStation = stringResource(id = R.string.fire_station)
-    val fireStationDesc = stringResource(id = R.string.fire_station_desc)
-    val wellLitArea = stringResource(id = R.string.well_lit_area)
-    val wellLitAreaDesc = stringResource(id = R.string.well_lit_area_desc)
-
-    return remember {
-        mutableStateOf(
-            listOf(
-                SafePlace(policeStation, policeStationDesc, LocationConstants.PoliceStationLocation),
-                SafePlace(hospital, hospitalDesc, LocationConstants.HospitalLocation),
-                SafePlace(pharmacy, pharmacyDesc, LocationConstants.PharmacyLocation),
-                SafePlace(
-                    universitySecurity,
-                    universitySecurityDesc,
-                    LocationConstants.UniversitySecurityLocation
-                ),
-                SafePlace(publicLibrary, publicLibraryDesc, LocationConstants.PublicLibraryLocation),
-                SafePlace(fireStation, fireStationDesc, LocationConstants.FireStationLocation),
-                SafePlace(wellLitArea, wellLitAreaDesc, LocationConstants.WellLitAreaLocation)
-            )
-        )
-    }
-}
-
-@Composable
-private fun SafePlacesDialog(
-    safePlaces: List<SafePlace>,
-    onDismiss: () -> Unit,
-    onSafePlacesChanged: (List<SafePlace>) -> Unit
-) {
-    val newPlaceTitle = stringResource(id = R.string.new_safe_place)
-    val newPlaceDescription = stringResource(id = R.string.new_safe_place_desc)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(id = R.string.nearby_safe_places)) },
-        text = {
-            Column {
-                LazyColumn(
-                    modifier = Modifier.heightIn(
-                        max = dimensionResource(id = R.dimen.map_safe_places_max_height)
-                    )
-                ) {
-                    itemsIndexed(safePlaces) { index, safePlace ->
-                        SafePlaceEditorRow(
-                            safePlace = safePlace,
-                            canMoveUp = index > 0,
-                            canMoveDown = index < safePlaces.lastIndex,
-                            onTitleChanged = { title ->
-                                onSafePlacesChanged(
-                                    safePlaces.toMutableList().also {
-                                        it[index] = safePlace.copy(title = title)
-                                    }
-                                )
-                            },
-                            onDescriptionChanged = { description ->
-                                onSafePlacesChanged(
-                                    safePlaces.toMutableList().also {
-                                        it[index] = safePlace.copy(description = description)
-                                    }
-                                )
-                            },
-                            onMoveUp = {
-                                onSafePlacesChanged(safePlaces.moveItem(index, index - 1))
-                            },
-                            onMoveDown = {
-                                onSafePlacesChanged(safePlaces.moveItem(index, index + 1))
-                            },
-                            onDelete = {
-                                onSafePlacesChanged(safePlaces.filterIndexed { placeIndex, _ -> placeIndex != index })
-                            }
-                        )
-                    }
-                }
-
-                TextButton(
-                    onClick = {
-                        onSafePlacesChanged(
-                            safePlaces + SafePlace(
-                                title = newPlaceTitle,
-                                description = newPlaceDescription,
-                                location = LocationConstants.DefaultLocation
-                            )
-                        )
-                    },
-                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null
-                    )
-                    Text(text = stringResource(id = R.string.add_safe_place))
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.save_safe_place))
-            }
-        }
-    )
-}
-
-@Composable
-private fun SafePlaceEditorRow(
-    safePlace: SafePlace,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onTitleChanged: (String) -> Unit,
-    onDescriptionChanged: (String) -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onDelete: () -> Unit
-) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = dimensionResource(id = R.dimen.spacing_medium))
+            .fillMaxSize()
+            .padding(dimensionResource(id = R.dimen.spacing_large))
     ) {
-        OutlinedTextField(
-            value = safePlace.title,
-            onValueChange = onTitleChanged,
-            label = { Text(text = stringResource(id = R.string.safe_place_name)) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = safePlace.description,
-            onValueChange = onDescriptionChanged,
-            label = { Text(text = stringResource(id = R.string.safe_place_note)) },
-            singleLine = true,
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = dimensionResource(id = R.dimen.spacing_small))
+                .height(dimensionResource(id = R.dimen.map_height))
+        ) {
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                properties = properties,
+                uiSettings = uiSettings,
+                onMapLoaded = { isMapLoaded = true }
+            ) {
+                currentLocation?.let { location ->
+                    Marker(
+                        state = MarkerState(position = location),
+                        title = stringResource(id = R.string.current_location),
+                        snippet = stringResource(id = R.string.current_location_desc)
+                    )
+                }
+
+                safePlaces.forEach { safePlace ->
+                    val categoryName = safePlaceCategoryName(safePlace.category)
+                    val distanceLabel = distanceLabel(safePlace.distanceMeters)
+                    Marker(
+                        state = MarkerState(position = LatLng(safePlace.latitude, safePlace.longitude)),
+                        title = safePlace.name,
+                        snippet = stringResource(
+                            id = R.string.safe_place_marker_snippet,
+                            categoryName,
+                            distanceLabel
+                        ),
+                        icon = BitmapDescriptorFactory.defaultMarker(safePlaceMarkerHue(safePlace.category))
+                    )
+                }
+            }
+
+            SafeStepsCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(dimensionResource(id = R.dimen.spacing_large))
+                    .align(Alignment.TopCenter)
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(id = R.string.safety_map_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(id = R.string.safety_map_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
+                    )
+                    statusMessageRes?.let { messageRes ->
+                        Text(
+                            text = stringResource(id = messageRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
+                        )
+                    }
+                    if (!isLocationGranted) {
+                        Button(
+                            onClick = { locationPermissionState.launchPermissionRequest() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = dimensionResource(id = R.dimen.spacing_small))
+                        ) {
+                            Text(text = stringResource(id = R.string.location_permission_button))
+                        }
+                    }
+                }
+            }
+
+            if (!isMapLoaded || isLoadingSafePlaces) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    strokeWidth = dimensionResource(id = R.dimen.spacing_xsmall)
+                )
+            }
+        }
+
+        SafePlacesList(
+            safePlaces = safePlaces,
+            isLoading = isLoadingSafePlaces,
+            onRefresh = { refreshCount += 1 },
+            onPlaceSelected = { safePlace ->
+                mapCenter = LatLng(safePlace.latitude, safePlace.longitude)
+            },
+            onNavigate = { safePlace ->
+                openGoogleMapsNavigation(context, safePlace)
+            }
         )
+    }
+}
+
+@Composable
+private fun SafePlacesList(
+    safePlaces: List<SafePlace>,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+    onPlaceSelected: (SafePlace) -> Unit,
+    onNavigate: (SafePlace) -> Unit
+) {
+    SafeStepsCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = dimensionResource(id = R.dimen.spacing_large))
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(
-                onClick = onMoveUp,
-                enabled = canMoveUp
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = stringResource(id = R.string.move_safe_place_up)
+            Text(
+                text = stringResource(id = R.string.nearby_safe_places),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            TextButton(onClick = onRefresh) {
+                Text(text = stringResource(id = R.string.refresh_safe_places))
+            }
+        }
+
+        when {
+            isLoading -> {
+                Text(
+                    text = stringResource(id = R.string.loading_safe_places),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
                 )
             }
-            IconButton(
-                onClick = onMoveDown,
-                enabled = canMoveDown
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = stringResource(id = R.string.move_safe_place_down)
+
+            safePlaces.isEmpty() -> {
+                Text(
+                    text = stringResource(id = R.string.no_safe_places_found),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
                 )
             }
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(id = R.string.delete_safe_place),
-                    tint = MaterialTheme.colorScheme.error
-                )
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.heightIn(
+                        max = dimensionResource(id = R.dimen.safe_place_list_max_height)
+                    )
+                ) {
+                    items(safePlaces) { safePlace ->
+                        SafePlaceListItem(
+                            safePlace = safePlace,
+                            onPlaceSelected = { onPlaceSelected(safePlace) },
+                            onNavigate = { onNavigate(safePlace) }
+                        )
+                    }
+                }
             }
         }
     }
 }
 
-private fun List<SafePlace>.moveItem(fromIndex: Int, toIndex: Int): List<SafePlace> {
-    if (fromIndex !in indices || toIndex !in indices) return this
-    return toMutableList().also { places ->
-        val movedPlace = places.removeAt(fromIndex)
-        places.add(toIndex, movedPlace)
+@Composable
+private fun SafePlaceListItem(
+    safePlace: SafePlace,
+    onPlaceSelected: () -> Unit,
+    onNavigate: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = dimensionResource(id = R.dimen.spacing_small)),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = dimensionResource(id = R.dimen.contact_card_elevation)
+        ),
+        onClick = onPlaceSelected
+    ) {
+        Column(
+            modifier = Modifier.padding(dimensionResource(id = R.dimen.spacing_large))
+        ) {
+            Text(
+                text = safePlace.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = safePlaceCategoryName(safePlace.category),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            safePlace.address?.let { address ->
+                Text(
+                    text = address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = distanceLabel(safePlace.distanceMeters),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            safePlace.rating?.let { rating ->
+                Text(
+                    text = stringResource(id = R.string.place_rating, rating),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = if (safePlace.isOpenNow == true) {
+                    stringResource(id = R.string.place_open_now)
+                } else {
+                    stringResource(id = R.string.place_open_unknown)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            TextButton(
+                onClick = onNavigate,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(text = stringResource(id = R.string.navigate_to_place))
+            }
+        }
     }
 }
 
-private data class SafePlace(
-    val title: String,
-    val description: String,
-    val location: LatLng
-)
+private fun refreshNearbySafePlaces(
+    context: Context,
+    repository: DemoSafePlacesRepository,
+    isLocationGranted: Boolean,
+    onLoadingChanged: (Boolean) -> Unit,
+    onCurrentLocationChanged: (LatLng?) -> Unit,
+    onMapCenterChanged: (LatLng) -> Unit,
+    onSafePlacesChanged: (List<SafePlace>) -> Unit,
+    onStatusMessageChanged: (Int?) -> Unit
+) {
+    onLoadingChanged(true)
+
+    fun loadForLocation(location: LatLng, statusMessageRes: Int?) {
+        val safePlaces = repository.getNearbySafePlaces(location.latitude, location.longitude)
+        onMapCenterChanged(location)
+        onSafePlacesChanged(safePlaces)
+        onStatusMessageChanged(
+            statusMessageRes ?: if (safePlaces.isEmpty()) R.string.no_safe_places_found else null
+        )
+        onLoadingChanged(false)
+    }
+
+    if (
+        !isLocationGranted ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) !=
+        PackageManager.PERMISSION_GRANTED
+    ) {
+        onCurrentLocationChanged(null)
+        loadForLocation(LocationConstants.DefaultLocation, R.string.location_permission_message)
+        return
+    }
+
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    val cancellationTokenSource = CancellationTokenSource()
+    fusedLocationClient.getCurrentLocation(
+        Priority.PRIORITY_HIGH_ACCURACY,
+        cancellationTokenSource.token
+    )
+        .addOnSuccessListener { location ->
+            if (location != null) {
+                val latLng = LatLng(location.latitude, location.longitude)
+                onCurrentLocationChanged(latLng)
+                loadForLocation(latLng, null)
+            } else {
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { lastLocation ->
+                        if (lastLocation != null) {
+                            val latLng = LatLng(lastLocation.latitude, lastLocation.longitude)
+                            onCurrentLocationChanged(latLng)
+                            loadForLocation(latLng, null)
+                        } else {
+                            onCurrentLocationChanged(null)
+                            loadForLocation(
+                                LocationConstants.DefaultLocation,
+                                R.string.location_unavailable_message
+                            )
+                        }
+                    }
+                    .addOnFailureListener {
+                        onCurrentLocationChanged(null)
+                        loadForLocation(LocationConstants.DefaultLocation, R.string.location_unavailable_message)
+                    }
+            }
+        }
+        .addOnFailureListener {
+            onCurrentLocationChanged(null)
+            loadForLocation(LocationConstants.DefaultLocation, R.string.safe_places_load_error)
+        }
+}
+
+@Composable
+private fun safePlaceCategoryName(category: SafePlaceCategory): String {
+    return when (category) {
+        SafePlaceCategory.PoliceStation -> stringResource(id = R.string.category_police_station)
+        SafePlaceCategory.Hospital -> stringResource(id = R.string.category_hospital)
+        SafePlaceCategory.Pharmacy -> stringResource(id = R.string.category_pharmacy)
+        SafePlaceCategory.FireStation -> stringResource(id = R.string.category_fire_station)
+        SafePlaceCategory.Library -> stringResource(id = R.string.category_library)
+        SafePlaceCategory.TransitStation -> stringResource(id = R.string.category_transit_station)
+        SafePlaceCategory.ConvenienceStore -> stringResource(id = R.string.category_convenience_store)
+        SafePlaceCategory.ShoppingCenter -> stringResource(id = R.string.category_shopping_center)
+        SafePlaceCategory.Hotel -> stringResource(id = R.string.category_hotel)
+        SafePlaceCategory.Bank -> stringResource(id = R.string.category_bank)
+        SafePlaceCategory.GovernmentBuilding -> stringResource(id = R.string.category_government_building)
+        SafePlaceCategory.CommunityCenter -> stringResource(id = R.string.category_community_center)
+        SafePlaceCategory.Embassy -> stringResource(id = R.string.category_embassy)
+        SafePlaceCategory.Other -> stringResource(id = R.string.category_other)
+    }
+}
+
+@Composable
+private fun distanceLabel(distanceMeters: Double?): String {
+    if (distanceMeters == null) return stringResource(id = R.string.category_other)
+    return if (distanceMeters < MetersPerKilometer) {
+        stringResource(id = R.string.distance_meters, distanceMeters.toInt())
+    } else {
+        stringResource(id = R.string.distance_kilometers, distanceMeters / MetersPerKilometer)
+    }
+}
+
+private fun safePlaceMarkerHue(category: SafePlaceCategory): Float {
+    return when (category) {
+        SafePlaceCategory.PoliceStation -> BitmapDescriptorFactory.HUE_BLUE
+        SafePlaceCategory.Hospital -> BitmapDescriptorFactory.HUE_RED
+        SafePlaceCategory.Pharmacy -> BitmapDescriptorFactory.HUE_GREEN
+        SafePlaceCategory.FireStation -> BitmapDescriptorFactory.HUE_ORANGE
+        SafePlaceCategory.Library -> BitmapDescriptorFactory.HUE_AZURE
+        SafePlaceCategory.TransitStation -> BitmapDescriptorFactory.HUE_VIOLET
+        SafePlaceCategory.ShoppingCenter -> BitmapDescriptorFactory.HUE_YELLOW
+        else -> BitmapDescriptorFactory.HUE_ROSE
+    }
+}
+
+private fun openGoogleMapsNavigation(context: Context, safePlace: SafePlace) {
+    val navigationIntent = Intent(Intent.ACTION_VIEW).apply {
+        data = Uri.parse("google.navigation:q=${safePlace.latitude},${safePlace.longitude}")
+    }
+
+    try {
+        context.startActivity(navigationIntent)
+    } catch (exception: ActivityNotFoundException) {
+        Toast.makeText(
+            context,
+            context.getString(R.string.alert_app_missing),
+            Toast.LENGTH_LONG
+        ).show()
+    }
+}
+
+private const val MetersPerKilometer = 1_000.0
