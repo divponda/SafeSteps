@@ -269,6 +269,7 @@ private fun AddContactDialog(
     var phone by remember { mutableStateOf("") }
     var relationship by remember { mutableStateOf("") }
     var isPrimary by remember { mutableStateOf(false) }
+    val isPhoneValid = phone.any { it.isDigit() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -288,6 +289,10 @@ private fun AddContactDialog(
                     onValueChange = { phone = it },
                     label = { Text(stringResource(id = R.string.label_phone)) },
                     singleLine = true,
+                    isError = phone.isNotBlank() && !isPhoneValid,
+                    supportingText = if (phone.isNotBlank() && !isPhoneValid) {
+                        { Text(stringResource(id = R.string.invalid_phone_number)) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
@@ -314,7 +319,7 @@ private fun AddContactDialog(
         confirmButton = {
             Button(
                 onClick = { onAdd(name, phone, relationship, isPrimary) },
-                enabled = name.isNotBlank() && phone.isNotBlank()
+                enabled = name.isNotBlank() && phone.isNotBlank() && isPhoneValid
             ) {
                 Text(stringResource(id = R.string.btn_add))
             }
@@ -337,6 +342,7 @@ private fun EditContactDialog(
     var phone by remember { mutableStateOf(contact.phoneNumber) }
     var relationship by remember { mutableStateOf(contact.relationship) }
     var isPrimary by remember { mutableStateOf(contact.isPrimary) }
+    val isPhoneValid = phone.any { it.isDigit() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -356,6 +362,10 @@ private fun EditContactDialog(
                     onValueChange = { phone = it },
                     label = { Text(stringResource(id = R.string.label_phone)) },
                     singleLine = true,
+                    isError = phone.isNotBlank() && !isPhoneValid,
+                    supportingText = if (phone.isNotBlank() && !isPhoneValid) {
+                        { Text(stringResource(id = R.string.invalid_phone_number)) }
+                    } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
@@ -391,7 +401,7 @@ private fun EditContactDialog(
                         )
                     )
                 },
-                enabled = name.isNotBlank() && phone.isNotBlank()
+                enabled = name.isNotBlank() && phone.isNotBlank() && isPhoneValid
             ) {
                 Text(stringResource(id = R.string.btn_save))
             }

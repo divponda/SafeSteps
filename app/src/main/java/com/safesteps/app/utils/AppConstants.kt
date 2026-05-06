@@ -19,6 +19,10 @@ object ContactStorageConstants {
     const val EmptyContactsJson = "[]"
 }
 
+object SafePlacesStorageConstants {
+    const val SafePlacesKey = "safe_places"
+}
+
 object LocationConstants {
     val DefaultLocation = LatLng(40.3289, -3.7638)           // UC3M Leganés campus
     val PoliceStationLocation = LatLng(40.3283, -3.7692)     // Comisaría de Leganés

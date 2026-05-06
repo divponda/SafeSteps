@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -31,12 +32,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.safesteps.app.R
+import com.safesteps.app.data.ContactsRepository
 import com.safesteps.app.notifications.SafeStepsNotificationManager
 import com.safesteps.app.screens.ContactsScreen
 import com.safesteps.app.screens.HomeScreen
 import com.safesteps.app.screens.MapScreen
 import com.safesteps.app.screens.TimerScreen
 import com.safesteps.app.utils.TimerConstants
+import com.safesteps.app.utils.triggerEmergencySmsWithLocation
 import kotlinx.coroutines.delay
 
 sealed class Screen(val route: String, @param:StringRes val titleRes: Int, val icon: ImageVector) {
@@ -60,6 +63,10 @@ fun SafeStepsNavigation() {
     val notificationManager = remember {
         SafeStepsNotificationManager(context.applicationContext)
     }
+    val contactsRepository = remember {
+        ContactsRepository(context.applicationContext)
+    }
+    val contacts by contactsRepository.contacts.collectAsState(initial = emptyList())
     var selectedTimerMinutes by remember {
         mutableIntStateOf(TimerConstants.DefaultTimerDurationMinutes)
     }
@@ -84,6 +91,10 @@ fun SafeStepsNavigation() {
         if (isTimerRunning && remainingTimerSeconds == 0) {
             isTimerRunning = false
             notificationManager.showTimerExpiredNotification()
+            triggerEmergencySmsWithLocation(
+                context = context,
+                contacts = contacts
+            )
             Toast.makeText(
                 context,
                 context.getString(R.string.timer_expired_toast),

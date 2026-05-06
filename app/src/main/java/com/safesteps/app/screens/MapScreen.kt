@@ -52,14 +52,23 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import android.widget.Toast
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import com.safesteps.app.R
+import com.safesteps.app.data.SafePlace
+import com.safesteps.app.data.SafePlacesRepository
 import com.safesteps.app.ui.components.SafeStepsCard
+import com.safesteps.app.utils.GeocodingService
 import com.safesteps.app.utils.LocationConstants
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val repository = remember { SafePlacesRepository(context.applicationContext) }
+    val scope = rememberCoroutineScope()
     val locationPermissionState = rememberPermissionState(
         permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
@@ -74,7 +83,11 @@ fun MapScreen() {
     val isLocationGranted = locationPermissionState.status.isGranted
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     var showSafePlacesDialog by remember { mutableStateOf(false) }
-    var safePlaces by rememberDefaultSafePlaces()
+    val persistedPlaces by repository.safePlaces.collectAsState(initial = null)
+    val defaultPlaces = rememberDefaultSafePlaces()
+    var safePlaces by remember(persistedPlaces) {
+        mutableStateOf(persistedPlaces ?: defaultPlaces)
+    }
 
     LaunchedEffect(isLocationGranted) {
         if (
@@ -197,14 +210,50 @@ fun MapScreen() {
             SafePlacesDialog(
                 safePlaces = safePlaces,
                 onDismiss = { showSafePlacesDialog = false },
-                onSafePlacesChanged = { safePlaces = it }
+                onSafePlacesChanged = { safePlaces = it },
+                onSave = {
+                    // Use GeocodingService (from Unit 6 slides) to convert any typed address
+                    // into real coordinates before saving, so the marker lands in the right place
+                    val geocodingService = GeocodingService(context)
+                    scope.launch {
+                        val geocodedPlaces = safePlaces.map { place ->
+                            if (place.address.isNotBlank()) {
+                                geocodingService.geocodeAddress(place.address)
+                                    .fold(
+                                        onSuccess = { latLonString ->
+                                            //returns lat,long as string
+                                            // so we parse it back into separate coordinates here
+                                            val parts = latLonString.split(", ")
+                                            place.copy(
+                                                latitude = parts[0].toDouble(),
+                                                longitude = parts[1].toDouble()
+                                            )
+                                        },
+                                        onFailure = {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.geocoding_failed),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            place
+                                        }
+                                    )
+                            } else {
+                                place
+                            }
+                        }
+                        safePlaces = geocodedPlaces
+                        repository.saveSafePlaces(geocodedPlaces)
+                    }
+                    showSafePlacesDialog = false
+                }
             )
         }
     }
 }
 
 @Composable
-private fun rememberDefaultSafePlaces(): androidx.compose.runtime.MutableState<List<SafePlace>> {
+private fun rememberDefaultSafePlaces(): List<SafePlace> {
     val policeStation = stringResource(id = R.string.police_station)
     val policeStationDesc = stringResource(id = R.string.police_station_desc)
     val hospital = stringResource(id = R.string.hospital)
@@ -221,20 +270,14 @@ private fun rememberDefaultSafePlaces(): androidx.compose.runtime.MutableState<L
     val wellLitAreaDesc = stringResource(id = R.string.well_lit_area_desc)
 
     return remember {
-        mutableStateOf(
-            listOf(
-                SafePlace(policeStation, policeStationDesc, LocationConstants.PoliceStationLocation),
-                SafePlace(hospital, hospitalDesc, LocationConstants.HospitalLocation),
-                SafePlace(pharmacy, pharmacyDesc, LocationConstants.PharmacyLocation),
-                SafePlace(
-                    universitySecurity,
-                    universitySecurityDesc,
-                    LocationConstants.UniversitySecurityLocation
-                ),
-                SafePlace(publicLibrary, publicLibraryDesc, LocationConstants.PublicLibraryLocation),
-                SafePlace(fireStation, fireStationDesc, LocationConstants.FireStationLocation),
-                SafePlace(wellLitArea, wellLitAreaDesc, LocationConstants.WellLitAreaLocation)
-            )
+        listOf(
+            SafePlace(policeStation, policeStationDesc, LocationConstants.PoliceStationLocation.latitude, LocationConstants.PoliceStationLocation.longitude),
+            SafePlace(hospital, hospitalDesc, LocationConstants.HospitalLocation.latitude, LocationConstants.HospitalLocation.longitude),
+            SafePlace(pharmacy, pharmacyDesc, LocationConstants.PharmacyLocation.latitude, LocationConstants.PharmacyLocation.longitude),
+            SafePlace(universitySecurity, universitySecurityDesc, LocationConstants.UniversitySecurityLocation.latitude, LocationConstants.UniversitySecurityLocation.longitude),
+            SafePlace(publicLibrary, publicLibraryDesc, LocationConstants.PublicLibraryLocation.latitude, LocationConstants.PublicLibraryLocation.longitude),
+            SafePlace(fireStation, fireStationDesc, LocationConstants.FireStationLocation.latitude, LocationConstants.FireStationLocation.longitude),
+            SafePlace(wellLitArea, wellLitAreaDesc, LocationConstants.WellLitAreaLocation.latitude, LocationConstants.WellLitAreaLocation.longitude)
         )
     }
 }
@@ -243,7 +286,8 @@ private fun rememberDefaultSafePlaces(): androidx.compose.runtime.MutableState<L
 private fun SafePlacesDialog(
     safePlaces: List<SafePlace>,
     onDismiss: () -> Unit,
-    onSafePlacesChanged: (List<SafePlace>) -> Unit
+    onSafePlacesChanged: (List<SafePlace>) -> Unit,
+    onSave: () -> Unit
 ) {
     val newPlaceTitle = stringResource(id = R.string.new_safe_place)
     val newPlaceDescription = stringResource(id = R.string.new_safe_place_desc)
@@ -277,6 +321,13 @@ private fun SafePlacesDialog(
                                     }
                                 )
                             },
+                            onAddressChanged = { address ->
+                                onSafePlacesChanged(
+                                    safePlaces.toMutableList().also {
+                                        it[index] = safePlace.copy(address = address)
+                                    }
+                                )
+                            },
                             onMoveUp = {
                                 onSafePlacesChanged(safePlaces.moveItem(index, index - 1))
                             },
@@ -296,7 +347,8 @@ private fun SafePlacesDialog(
                             safePlaces + SafePlace(
                                 title = newPlaceTitle,
                                 description = newPlaceDescription,
-                                location = LocationConstants.DefaultLocation
+                                latitude = LocationConstants.DefaultLocation.latitude,
+                                longitude = LocationConstants.DefaultLocation.longitude
                             )
                         )
                     },
@@ -311,7 +363,7 @@ private fun SafePlacesDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) {
+            Button(onClick = onSave) {
                 Text(text = stringResource(id = R.string.save_safe_place))
             }
         }
@@ -325,6 +377,7 @@ private fun SafePlaceEditorRow(
     canMoveDown: Boolean,
     onTitleChanged: (String) -> Unit,
     onDescriptionChanged: (String) -> Unit,
+    onAddressChanged: (String) -> Unit,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onDelete: () -> Unit
@@ -345,6 +398,17 @@ private fun SafePlaceEditorRow(
             value = safePlace.description,
             onValueChange = onDescriptionChanged,
             label = { Text(text = stringResource(id = R.string.safe_place_note)) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = dimensionResource(id = R.dimen.spacing_small))
+        )
+        // Address field — when the user types an address and saves, the Geocoder (Unit 6)
+        // converts it to coordinates so the marker appears at the right location on the map
+        OutlinedTextField(
+            value = safePlace.address,
+            onValueChange = onAddressChanged,
+            label = { Text(text = stringResource(id = R.string.safe_place_address)) },
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
@@ -391,8 +455,3 @@ private fun List<SafePlace>.moveItem(fromIndex: Int, toIndex: Int): List<SafePla
     }
 }
 
-private data class SafePlace(
-    val title: String,
-    val description: String,
-    val location: LatLng
-)

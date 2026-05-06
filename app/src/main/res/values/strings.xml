@@ -46,6 +46,10 @@
     <string name="delete_safe_place">Delete Safe Place</string>
     <string name="new_safe_place">New Safe Place</string>
     <string name="new_safe_place_desc">Custom safe place note</string>
+    <string name="safe_place_address">Address (e.g. Calle Mayor 1, Madrid)</string>
+    <string name="geocoding_failed">Could not find that address. Please try again.</string>
+    <string name="no_results">No results found</string>
+    <string name="lat_lon">%1$.6f, %2$.6f</string>
     <string name="police_station">Police Station</string>
     <string name="police_station_desc">National Police Headquarters</string>
     <string name="hospital">Hospital</string>

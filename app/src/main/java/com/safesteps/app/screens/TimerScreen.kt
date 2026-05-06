@@ -27,10 +27,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import com.safesteps.app.R
 import com.safesteps.app.ui.components.SafeStepsPrimaryButton
 import com.safesteps.app.utils.TimerConstants
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun TimerScreen(
     selectedMinutes: Int,
@@ -45,6 +49,10 @@ fun TimerScreen(
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = {}
+    )
+
+    val locationPermissionState = rememberPermissionState(
+        permission = Manifest.permission.ACCESS_FINE_LOCATION
     )
 
     Column(
@@ -122,6 +130,11 @@ fun TimerScreen(
                     onCancelTimer()
                 } else {
                     requestNotificationPermissionIfNeeded(context, notificationPermissionLauncher)
+                    
+                    if (!locationPermissionState.status.isGranted) {
+                        locationPermissionState.launchPermissionRequest()
+                    }
+
                     onStartTimer()
                 }
             }
