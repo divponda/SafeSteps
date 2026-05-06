@@ -29,6 +29,7 @@ object LocationConstants {
     val FireStationLocation = LatLng(40.3251, -3.7703)       // Parque de Bomberos de Leganés
     val WellLitAreaLocation = LatLng(40.3308, -3.7648)       // Plaza de España, Leganés
     const val DefaultMapZoom = 15f
+    const val MAX_SAFE_PLACES_TO_DISPLAY = 8
     const val GoogleMapsQueryUrl = "https://maps.google.com/?q=%1$.6f,%2$.6f"
 }
 

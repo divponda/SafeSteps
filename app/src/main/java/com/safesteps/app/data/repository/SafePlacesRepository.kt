@@ -47,7 +47,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
             )
         }
             .sortedBy { it.distanceMeters ?: Double.MAX_VALUE }
-            .take(LocationConstants.MaxSafePlacesToDisplay)
+            .take(LocationConstants.MAX_SAFE_PLACES_TO_DISPLAY)
     }
 
     private fun offsetLocation(
@@ -56,8 +56,8 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
         northMeters: Double,
         eastMeters: Double
     ): Pair<Double, Double> {
-        val latitudeOffset = northMeters / MetersPerDegreeLatitude
-        val longitudeOffset = eastMeters / (MetersPerDegreeLatitude * cos(Math.toRadians(latitude)))
+        val latitudeOffset = northMeters / METERS_PER_DEGREE_LATITUDE
+        val longitudeOffset = eastMeters / (METERS_PER_DEGREE_LATITUDE * cos(Math.toRadians(latitude)))
         return latitude + latitudeOffset to longitude + longitudeOffset
     }
 
@@ -72,7 +72,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
     )
 
     private companion object {
-        const val MetersPerDegreeLatitude = 111_320.0
+        const val METERS_PER_DEGREE_LATITUDE = 111_320.0
 
         val safePlaceTemplates = listOf(
             SafePlaceTemplate(
