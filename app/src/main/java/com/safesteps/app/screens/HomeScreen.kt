@@ -177,12 +177,12 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
                 Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
                 Text(
                     text = stringResource(id = R.string.sos_button),
-                    fontSize = 32.sp,
+                    fontSize = dimensionResource(id = R.dimen.sos_label_font_size).value.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = stringResource(id = R.string.sos_tap_hint),
-                    fontSize = 12.sp
+                    fontSize = dimensionResource(id = R.dimen.sos_hint_font_size).value.sp
                 )
             }
         }
