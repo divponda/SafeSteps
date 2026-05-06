@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +71,7 @@ import com.safesteps.app.data.model.SafePlace
 import com.safesteps.app.data.model.SafePlaceCategory
 import com.safesteps.app.data.repository.DemoSafePlacesRepository
 import com.safesteps.app.ui.components.SafeStepsCard
+import com.safesteps.app.ui.components.StatusPill
 import com.safesteps.app.utils.LocationConstants
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -134,12 +146,14 @@ fun MapScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(dimensionResource(id = R.dimen.spacing_large))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(dimensionResource(id = R.dimen.map_height))
+                .clip(MaterialTheme.shapes.large)
         ) {
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
@@ -198,12 +212,34 @@ fun MapScreen() {
                             modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
                         )
                     }
+                    Row(
+                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_medium)),
+                        horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small))
+                    ) {
+                        StatusPill(
+                            text = if (currentLocation != null) {
+                                stringResource(id = R.string.map_location_detected)
+                            } else {
+                                stringResource(id = R.string.map_location_fallback)
+                            },
+                            color = if (currentLocation != null) {
+                                MaterialTheme.colorScheme.secondary
+                            } else {
+                                MaterialTheme.colorScheme.error
+                            }
+                        )
+                        StatusPill(
+                            text = stringResource(id = R.string.nearby_safe_places_count, safePlaces.size),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (!isLocationGranted) {
                         Button(
                             onClick = { locationPermissionState.launchPermissionRequest() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = dimensionResource(id = R.dimen.spacing_small))
+                                .padding(top = dimensionResource(id = R.dimen.spacing_small)),
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Text(text = stringResource(id = R.string.location_permission_button))
                         }
@@ -215,6 +251,24 @@ fun MapScreen() {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     strokeWidth = dimensionResource(id = R.dimen.spacing_xsmall)
+                )
+            }
+
+            FilledTonalButton(
+                onClick = { refreshCount += 1 },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(dimensionResource(id = R.dimen.spacing_large)),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Place,
+                    contentDescription = null,
+                    modifier = Modifier.size(dimensionResource(id = R.dimen.primary_icon_size))
+                )
+                Text(
+                    text = stringResource(id = R.string.refresh_safe_places),
+                    modifier = Modifier.padding(start = dimensionResource(id = R.dimen.spacing_small))
                 )
             }
         }
@@ -241,7 +295,7 @@ private fun SafePlacesList(
     onPlaceSelected: (SafePlace) -> Unit,
     onNavigate: (SafePlace) -> Unit
 ) {
-    SafeStepsCard(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = dimensionResource(id = R.dimen.spacing_large))
@@ -256,10 +310,23 @@ private fun SafePlacesList(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            TextButton(onClick = onRefresh) {
+            FilledTonalButton(
+                onClick = onRefresh,
+                shape = MaterialTheme.shapes.medium
+            ) {
                 Text(text = stringResource(id = R.string.refresh_safe_places))
             }
         }
+        Text(
+            text = if (isLoading) {
+                stringResource(id = R.string.map_status_scanning)
+            } else {
+                stringResource(id = R.string.map_status_ready)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
+        )
 
         when {
             isLoading -> {
@@ -282,9 +349,10 @@ private fun SafePlacesList(
 
             else -> {
                 LazyColumn(
-                    modifier = Modifier.heightIn(
-                        max = dimensionResource(id = R.dimen.safe_place_list_max_height)
-                    )
+                    modifier = Modifier
+                        .padding(top = dimensionResource(id = R.dimen.spacing_small))
+                        .heightIn(max = dimensionResource(id = R.dimen.safe_place_list_max_height)),
+                    verticalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small))
                 ) {
                     items(safePlaces) { safePlace ->
                         SafePlaceListItem(
@@ -307,59 +375,115 @@ private fun SafePlaceListItem(
 ) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = dimensionResource(id = R.dimen.spacing_small)),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = dimensionResource(id = R.dimen.contact_card_elevation)
+            .fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = dimensionResource(id = R.dimen.spacing_xsmall)),
         onClick = onPlaceSelected
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(dimensionResource(id = R.dimen.spacing_large))
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.Top
         ) {
-            Text(
-                text = safePlace.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = safePlaceCategoryName(safePlace.category),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            safePlace.address?.let { address ->
-                Text(
-                    text = address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                text = distanceLabel(safePlace.distanceMeters),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            safePlace.rating?.let { rating ->
-                Text(
-                    text = stringResource(id = R.string.place_rating, rating),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                text = if (safePlace.isOpenNow == true) {
-                    stringResource(id = R.string.place_open_now)
-                } else {
-                    stringResource(id = R.string.place_open_unknown)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            TextButton(
-                onClick = onNavigate,
-                modifier = Modifier.align(Alignment.End)
+            Box(
+                modifier = Modifier
+                    .size(dimensionResource(id = R.dimen.safe_place_marker_size))
+                    .background(categoryAccentColor(safePlace.category).copy(alpha = 0.16f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Text(text = stringResource(id = R.string.navigate_to_place))
+                Icon(
+                    imageVector = if (safePlace.category == SafePlaceCategory.Hospital ||
+                        safePlace.category == SafePlaceCategory.FireStation
+                    ) {
+                        Icons.Default.Warning
+                    } else {
+                        Icons.Default.Place
+                    },
+                    contentDescription = null,
+                    tint = categoryAccentColor(safePlace.category),
+                    modifier = Modifier.size(dimensionResource(id = R.dimen.primary_icon_size))
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = dimensionResource(id = R.dimen.spacing_medium))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = safePlace.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = safePlaceCategoryName(safePlace.category),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = categoryAccentColor(safePlace.category),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Text(
+                        text = distanceLabel(safePlace.distanceMeters),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.shapes.small
+                            )
+                            .padding(
+                                horizontal = dimensionResource(id = R.dimen.spacing_small),
+                                vertical = dimensionResource(id = R.dimen.spacing_xsmall)
+                            )
+                    )
+                }
+                safePlace.address?.let { address ->
+                    Text(
+                        text = address,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    safePlace.rating?.let { rating ->
+                        Text(
+                            text = stringResource(id = R.string.place_rating, rating),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        text = if (safePlace.isOpenNow == true) {
+                            stringResource(id = R.string.place_open_now)
+                        } else {
+                            stringResource(id = R.string.place_open_unknown)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(
+                            start = if (safePlace.rating != null) {
+                                dimensionResource(id = R.dimen.spacing_medium)
+                            } else {
+                                dimensionResource(id = R.dimen.spacing_xsmall)
+                            }
+                        )
+                    )
+                }
+                TextButton(
+                    onClick = onNavigate,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text(text = stringResource(id = R.string.navigate_to_place))
+                }
             }
         }
     }
@@ -462,6 +586,20 @@ private fun distanceLabel(distanceMeters: Double?): String {
         stringResource(id = R.string.distance_meters, distanceMeters.toInt())
     } else {
         stringResource(id = R.string.distance_kilometers, distanceMeters / MetersPerKilometer)
+    }
+}
+
+@Composable
+private fun categoryAccentColor(category: SafePlaceCategory): Color {
+    return when (category) {
+        SafePlaceCategory.PoliceStation -> MaterialTheme.colorScheme.primary
+        SafePlaceCategory.Hospital -> MaterialTheme.colorScheme.error
+        SafePlaceCategory.Pharmacy -> MaterialTheme.colorScheme.secondary
+        SafePlaceCategory.FireStation -> MaterialTheme.colorScheme.error
+        SafePlaceCategory.Library -> MaterialTheme.colorScheme.tertiary
+        SafePlaceCategory.TransitStation -> MaterialTheme.colorScheme.primary
+        SafePlaceCategory.ShoppingCenter -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.secondary
     }
 }
 

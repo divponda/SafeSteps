@@ -8,22 +8,28 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -50,8 +56,7 @@ import com.google.android.gms.location.LocationServices
 import com.safesteps.app.data.Contact
 import com.safesteps.app.data.ContactsRepository
 import com.safesteps.app.ui.components.SafeStepsCard
-import com.safesteps.app.ui.theme.EmergencyRed
-import com.safesteps.app.ui.theme.EmergencyRedDark
+import com.safesteps.app.ui.components.StatusPill
 import com.safesteps.app.utils.AnimationConstants
 import com.safesteps.app.utils.AppConstants
 import com.safesteps.app.utils.LocationConstants
@@ -81,12 +86,15 @@ fun HomeScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(dimensionResource(id = R.dimen.screen_horizontal_padding)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Header
-        HeaderSection()
+        HeaderSection(
+            contactCount = contacts.size,
+            isLocationGranted = locationPermissionState.status.isGranted
+        )
 
         // SOS Button
         SosButtonSection(
@@ -124,9 +132,12 @@ fun HomeScreen() {
 }
 
 @Composable
-private fun ColumnScope.HeaderSection() {
+private fun ColumnScope.HeaderSection(
+    contactCount: Int,
+    isLocationGranted: Boolean
+) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.Start,
         modifier = Modifier.padding(top = dimensionResource(id = R.dimen.home_header_top_padding))
     ) {
         Text(
@@ -141,6 +152,44 @@ private fun ColumnScope.HeaderSection() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
         )
+        SafeStepsCard(
+            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_large)),
+            elevation = dimensionResource(id = R.dimen.contact_card_elevation)
+        ) {
+            Text(
+                text = stringResource(id = R.string.home_status_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = stringResource(id = R.string.home_status_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
+            )
+            Row(
+                modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_medium)),
+                horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small))
+            ) {
+                StatusPill(
+                    text = if (isLocationGranted) {
+                        stringResource(id = R.string.home_location_ready)
+                    } else {
+                        stringResource(id = R.string.home_location_needed)
+                    },
+                    color = if (isLocationGranted) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+                StatusPill(
+                    text = stringResource(id = R.string.home_contacts_count, contactCount),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
 
@@ -152,6 +201,16 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
             .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
+        Box(
+            modifier = Modifier
+                .size(dimensionResource(id = R.dimen.sos_outer_ring_size))
+                .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.32f), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(dimensionResource(id = R.dimen.sos_middle_ring_size))
+                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.10f), CircleShape)
+        )
         Button(
             onClick = onSosClick,
             modifier = Modifier
@@ -159,7 +218,8 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
                 .scale(scale),
             shape = CircleShape,
             colors = ButtonDefaults.buttonColors(
-                containerColor = EmergencyRed
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError
             ),
             elevation = ButtonDefaults.buttonElevation(
                 defaultElevation = dimensionResource(id = R.dimen.sos_default_elevation),
@@ -178,11 +238,12 @@ private fun ColumnScope.SosButtonSection(scale: Float, onSosClick: () -> Unit) {
                 Text(
                     text = stringResource(id = R.string.sos_button),
                     fontSize = dimensionResource(id = R.dimen.sos_label_font_size).value.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = stringResource(id = R.string.sos_tap_hint),
-                    fontSize = dimensionResource(id = R.dimen.sos_hint_font_size).value.sp
+                    fontSize = dimensionResource(id = R.dimen.sos_hint_font_size).value.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -202,40 +263,61 @@ private fun ColumnScope.QuickActionsSection(
     ) {
         Column {
             Text(
-                text = stringResource(id = R.string.quick_actions),
+                text = stringResource(id = R.string.home_emergency_panel),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = dimensionResource(id = R.dimen.spacing_xsmall))
+            )
+            Text(
+                text = stringResource(id = R.string.home_emergency_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = dimensionResource(id = R.dimen.spacing_medium))
             )
 
-            Button(
-                onClick = { callEmergencyServices(context) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = EmergencyRedDark
-                )
-            ) {
-                Text(stringResource(id = R.string.call_emergency))
-            }
+            Row(horizontalArrangement = Arrangement.spacedBy(dimensionResource(id = R.dimen.spacing_small))) {
+                Button(
+                    onClick = { callEmergencyServices(context) },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(id = R.dimen.primary_icon_size))
+                    )
+                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_small)))
+                    Text(stringResource(id = R.string.home_call_112))
+                }
 
-            Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_small)))
-
-            Button(
-                onClick = {
-                    if (isLocationGranted) {
-                        shareLocation(context)
-                    } else {
-                        onRequestLocationPermission()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    if (isLocationGranted)
-                        stringResource(id = R.string.share_location)
-                    else
-                        stringResource(id = R.string.enable_location)
-                )
+                FilledTonalButton(
+                    onClick = {
+                        if (isLocationGranted) {
+                            shareLocation(context)
+                        } else {
+                            onRequestLocationPermission()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        modifier = Modifier.size(dimensionResource(id = R.dimen.primary_icon_size))
+                    )
+                    Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_small)))
+                    Text(
+                        if (isLocationGranted)
+                            stringResource(id = R.string.home_share_short)
+                        else
+                            stringResource(id = R.string.home_enable_location_short)
+                    )
+                }
             }
         }
     }

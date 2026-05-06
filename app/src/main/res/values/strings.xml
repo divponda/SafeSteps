@@ -27,6 +27,16 @@
     <string name="share_subject">My Location - SafeSteps</string>
     <string name="share_body">I\'m sharing my location with you via SafeSteps app. Location: %1$s, %2$s - Map: https://maps.google.com/?q=%1$s,%2$s</string>
     <string name="share_location_chooser">Share Location</string>
+    <string name="home_status_title">You are currently safe</string>
+    <string name="home_status_desc">SOS, location sharing, and trusted contact tools are ready.</string>
+    <string name="home_location_ready">Location enabled</string>
+    <string name="home_location_needed">Location permission needed</string>
+    <string name="home_contacts_count">%1$d trusted contacts</string>
+    <string name="home_emergency_panel">Emergency help</string>
+    <string name="home_emergency_hint">Tap only when you need urgent help.</string>
+    <string name="home_call_112">Call 112</string>
+    <string name="home_share_short">Share location</string>
+    <string name="home_enable_location_short">Enable location</string>
 
     <!-- Map Screen -->
     <string name="safety_map_title">Safety Map</string>
@@ -36,6 +46,11 @@
     <string name="current_location">Current Location</string>
     <string name="current_location_desc">Your last known location</string>
     <string name="nearby_safe_places">Nearby Safe Places</string>
+    <string name="nearby_safe_places_count">%1$d found nearby</string>
+    <string name="map_status_scanning">Scanning safe places</string>
+    <string name="map_status_ready">Area safety map ready</string>
+    <string name="map_location_detected">Current location detected</string>
+    <string name="map_location_fallback">Using fallback area</string>
     <string name="refresh_safe_places">Refresh</string>
     <string name="navigate_to_place">Navigate</string>
     <string name="loading_safe_places">Loading nearby safe places…</string>
@@ -86,6 +101,8 @@
     <!-- Contacts Screen -->
     <string name="contacts_title">Emergency Contacts</string>
     <string name="contacts_desc">Manage your emergency contacts who will be notified when you trigger an SOS alert.</string>
+    <string name="contacts_status_title">Trusted support network</string>
+    <string name="contacts_status_desc">%1$d contacts saved for emergency alerts.</string>
     <string name="no_contacts">No Emergency Contacts</string>
     <string name="add_contacts_hint">Tap the + button to add contacts</string>
     <string name="add_contact_title">Add Emergency Contact</string>
@@ -104,6 +121,9 @@
     <!-- Timer Screen -->
     <string name="timer_title">Safety Timer</string>
     <string name="timer_desc">Set a timer. When it expires, you\'ll receive a notification reminding you to check in or call for help.</string>
+    <string name="timer_status_ready">Ready to start</string>
+    <string name="timer_status_active">Timer running</string>
+    <string name="timer_countdown_label">Countdown</string>
     <string name="timer_duration_label">Duration (minutes): %1$d</string>
     <string name="timer_remaining_time">Time remaining: %1$02d:%2$02d</string>
     <string name="timer_recent_durations">Recent durations</string>

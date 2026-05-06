@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -29,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +43,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,7 +61,8 @@ import com.safesteps.app.R
 import com.safesteps.app.data.Contact
 import com.safesteps.app.data.ContactsRepository
 import com.safesteps.app.ui.components.EmptyStateMessage
-import com.safesteps.app.ui.theme.EmergencyRed
+import com.safesteps.app.ui.components.SafeStepsCard
+import com.safesteps.app.ui.components.StatusPill
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -74,6 +80,10 @@ fun ContactsScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                ),
                 title = {
                     Text(
                         stringResource(id = R.string.contacts_title),
@@ -85,7 +95,9 @@ fun ContactsScreen() {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = MaterialTheme.shapes.large
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -97,6 +109,7 @@ fun ContactsScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
                 .padding(horizontal = dimensionResource(id = R.dimen.screen_horizontal_padding))
         ) {
@@ -106,6 +119,21 @@ fun ContactsScreen() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = dimensionResource(id = R.dimen.spacing_small))
             )
+            SafeStepsCard(
+                modifier = Modifier.padding(bottom = dimensionResource(id = R.dimen.spacing_medium)),
+                elevation = dimensionResource(id = R.dimen.contact_card_elevation)
+            ) {
+                StatusPill(
+                    text = stringResource(id = R.string.contacts_status_title),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = stringResource(id = R.string.contacts_status_desc, contacts.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_medium))
+                )
+            }
 
             if (contacts.isEmpty()) {
                 EmptyContactsView()
@@ -189,6 +217,10 @@ private fun ContactCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = dimensionResource(id = R.dimen.contact_card_elevation)
         )
@@ -199,6 +231,20 @@ private fun ContactCard(
                 .padding(dimensionResource(id = R.dimen.spacing_large)),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(dimensionResource(id = R.dimen.contact_avatar_size))
+                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = contact.name.trim().take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(modifier = Modifier.width(dimensionResource(id = R.dimen.spacing_medium)))
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -233,7 +279,7 @@ private fun ContactCard(
                     )
                 }
             }
-            IconButton(onClick = onCall) {
+            FilledTonalIconButton(onClick = onCall) {
                 Icon(
                     imageVector = Icons.Default.Phone,
                     contentDescription = stringResource(id = R.string.call_contact),
@@ -253,7 +299,7 @@ private fun ContactCard(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = stringResource(id = R.string.delete_contact),
-                    tint = EmergencyRed
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }
