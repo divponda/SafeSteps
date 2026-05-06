@@ -56,6 +56,7 @@ import com.google.android.gms.location.LocationServices
 import com.safesteps.app.data.Contact
 import com.safesteps.app.data.ContactsRepository
 import com.safesteps.app.ui.components.SafeStepsCard
+import com.safesteps.app.ui.components.SafeStepsScreenTitle
 import com.safesteps.app.ui.components.StatusPill
 import com.safesteps.app.utils.AnimationConstants
 import com.safesteps.app.utils.AppConstants
@@ -137,15 +138,10 @@ private fun ColumnScope.HeaderSection(
     isLocationGranted: Boolean
 ) {
     Column(
-        horizontalAlignment = Alignment.Start,
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(top = dimensionResource(id = R.dimen.home_header_top_padding))
     ) {
-        Text(
-            text = stringResource(id = R.string.app_name),
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        SafeStepsScreenTitle(titleRes = R.string.app_name)
         Text(
             text = stringResource(id = R.string.tagline),
             style = MaterialTheme.typography.bodyLarge,
