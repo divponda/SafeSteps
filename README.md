@@ -1,6 +1,6 @@
 # SafeSteps
 
-SafeSteps is a personal safety Android app for quick emergency actions while walking alone or feeling unsafe. It focuses on fast SOS access, local emergency contacts, location sharing, a safety map, and a check-in timer.
+SafeSteps is a personal safety Android app for quick emergency actions while walking alone or feeling unsafe. It focuses on fast SOS access, local emergency contacts, location sharing, a safety map, and a safety timer that automatically alerts emergency contacts if the user does not check in.
 
 ## Implemented Main Features
 
@@ -11,8 +11,8 @@ SafeSteps is a personal safety Android app for quick emergency actions while wal
 - Safety map using Google Maps Compose
 - Current-location marker and automatic nearby demo safe-place markers for police, hospital, pharmacy, fire station, library, transit station, hotel, and shopping center
 - Nearby Safe Places list with distance, category, address, rating, open status, refresh, and navigation actions
-- Safety timer with minute-by-minute duration selection, recent durations, countdown, cancel/check-in behavior, tab-safe state, and expiry notification
-- Runtime location and notification permission handling
+- Safety timer with minute-by-minute duration selection, recent durations, countdown, cancel/check-in behavior, tab-safe state, and automatic emergency SMS alerts when the timer expires
+- Runtime location, SMS, and notification permission handling
 
 ## Implemented Secondary Features
 
@@ -32,7 +32,7 @@ SafeSteps is a personal safety Android app for quick emergency actions while wal
 - Google Play Services Location
 - Jetpack DataStore Preferences
 - Kotlin Serialization
-- Android local notifications
+- Android `SmsManager` for automatic emergency SMS sending
 
 ## AVD Used
 
@@ -72,16 +72,22 @@ The current project uses a demo safe-places repository generated around the user
 7. Tap a safe place in the list and confirm the map focuses on that marker.
 8. Tap Refresh and confirm the list reloads.
 9. Start a 3-minute Safety Timer, switch to Contacts, then return to Timer and confirm it is still running.
-10. Cancel the timer, then let another timer expire to verify the local notification.
+10. Grant SMS permission, cancel the timer once and confirm no alert sends, then let another timer expire to verify automatic emergency SMS sending.
 11. Use the phone icon on a contact to confirm the Android dialer opens.
 12. Restart the app and confirm saved contacts are still present.
 
 ## Known Limitations
 
 - Safety map uses demo safe-place results generated around the current/default location instead of live Places API results.
-- Safety timer notification is intended for demo use and is not a full background service.
-- SOS opens the messaging app for user-controlled sending; it does not send SMS automatically.
+- Safety timer expiry uses `SmsManager` to send emergency SMS alerts to saved emergency contacts when SMS permission is granted.
+- Timer expiry alerting is intended for foreground/class demo use and is not a full background service.
+- SOS also opens the messaging app for user-controlled sending; it does not send SMS automatically.
 - Location sharing uses the last known location when available, with a Madrid fallback for emulator demos.
+- Automatic SMS sending requires a device or emulator image with SMS support and a valid telephony/SMS environment.
+
+## Safety Timer Emergency Alert Behavior
+
+When the Safety Timer reaches zero, SafeSteps loads locally saved emergency contacts and attempts to send an emergency SMS to every valid saved phone number using Android `SmsManager`. If location permission is granted and a current or last known location is available, the message includes a Google Maps link. If location is unavailable, the message uses a clear fallback sentence. `SEND_SMS` permission is requested before the timer starts, and the app shows an in-app result dialog plus a notification when possible after sending is attempted.
 
 ## Team Work Distribution
 

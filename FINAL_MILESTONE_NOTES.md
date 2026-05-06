@@ -28,7 +28,7 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 - Emergency contacts persistence with DataStore
 - Add/delete/call contacts
 - Safety map with permission handling, current-location marker, automatic nearby safe-place markers, refresh, navigation, and a visible places list
-- Safety timer countdown with minute-by-minute selection, recent durations, tab-safe state, and expiry notification
+- Safety timer countdown with minute-by-minute selection, recent durations, tab-safe state, and automatic emergency SMS alerts on expiry
 - Dark/light theme support
 
 ## Suggested Final Report Screenshots
@@ -41,7 +41,7 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 6. Safety Map Nearby Safe Places list.
 7. Safety Timer screen while a 3-minute countdown is running.
 8. Contacts screen showing the call icon.
-9. Timer expiry notification in the notification shade.
+9. Timer expiry result dialog after automatic emergency SMS sending.
 10. Android Studio Pixel 4 AVD run configuration or emulator launch view.
 
 ## Verification Notes
@@ -53,5 +53,8 @@ The refactor covers screen titles, bottom navigation labels, contact dialog fiel
 - Safety Map was manually verified by the project owner after adding a valid Google Maps API key.
 - Safety Map currently uses a demo safe-places repository; live Google Places results can be added later by enabling Places API / Places SDK for Android.
 - ADB found no running emulator in this shell session, so remaining full-app manual testing should be completed from Android Studio on the Pixel 4 AVD.
-- On Android 13+, allow notification permission to see timer expiry notifications.
+- Safety Timer expiry now uses `SmsManager` to automatically send emergency SMS alerts to valid saved contacts when SMS permission is granted.
+- The emergency timer message uses saved emergency contacts and includes a Google Maps location link when location is available.
+- The timer screen requests `SEND_SMS` permission before starting so expiry does not silently fail.
+- The app shows an in-app result dialog and notification result after timer SMS sending is attempted.
 - Keep `MAPS_API_KEY` in `local.properties` only; do not commit the API key.

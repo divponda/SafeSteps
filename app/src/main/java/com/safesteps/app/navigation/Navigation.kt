@@ -1,5 +1,8 @@
 package com.safesteps.app.navigation
 
+import android.content.Context
+import android.os.Build
+import android.telephony.SmsManager
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
@@ -17,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +37,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.safesteps.app.R
-import com.safesteps.app.notifications.SafeStepsNotificationManager
+import com.safesteps.app.data.Contact
+import com.safesteps.app.data.ContactsRepository
 import com.safesteps.app.screens.ContactsScreen
 import com.safesteps.app.screens.HomeScreen
 import com.safesteps.app.screens.MapScreen
@@ -58,10 +63,9 @@ val bottomNavItems = listOf(
 @Composable
 fun SafeStepsNavigation() {
     val context = LocalContext.current
+    val contactsRepository = remember { ContactsRepository(context.applicationContext) }
+    val contacts by contactsRepository.contacts.collectAsState(initial = emptyList())
     val navController = rememberNavController()
-    val notificationManager = remember {
-        SafeStepsNotificationManager(context.applicationContext)
-    }
     var selectedTimerMinutes by remember {
         mutableIntStateOf(TimerConstants.DefaultTimerDurationMinutes)
     }
@@ -73,10 +77,6 @@ fun SafeStepsNavigation() {
         mutableStateOf(emptyList<Int>())
     }
 
-    LaunchedEffect(Unit) {
-        notificationManager.createSafetyTimerChannel()
-    }
-
     LaunchedEffect(isTimerRunning) {
         while (isTimerRunning && remainingTimerSeconds > 0) {
             delay(TimerConstants.CountdownTickMillis)
@@ -85,7 +85,7 @@ fun SafeStepsNavigation() {
 
         if (isTimerRunning && remainingTimerSeconds == 0) {
             isTimerRunning = false
-            notificationManager.showTimerExpiredNotification()
+            sendTimerExpiredSms(context, contacts)
             Toast.makeText(
                 context,
                 context.getString(R.string.timer_expired_toast),
@@ -164,6 +164,35 @@ fun SafeStepsNavigation() {
                 )
             }
             composable(Screen.Contacts.route) { ContactsScreen() }
+        }
+    }
+}
+
+private fun sendTimerExpiredSms(context: Context, contacts: List<Contact>) {
+    if (contacts.isEmpty()) return
+
+    val message = "SAFETY ALERT: My SafeSteps check-in timer has expired and " +
+        "I may need help. Please check on me immediately. (Automated message)"
+
+    val smsManager: SmsManager? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        context.getSystemService(SmsManager::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        SmsManager.getDefault()
+    }
+
+    if (smsManager == null) return
+
+    contacts.sortedByDescending { it.isPrimary }.forEach { contact ->
+        try {
+            val parts = smsManager.divideMessage(message)
+            if (parts.size == 1) {
+                smsManager.sendTextMessage(contact.phoneNumber, null, message, null, null)
+            } else {
+                smsManager.sendMultipartTextMessage(contact.phoneNumber, null, parts, null, null)
+            }
+        } catch (_: Exception) {
+            // Ignore per-contact failures; continue to next contact
         }
     }
 }

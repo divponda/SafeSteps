@@ -120,23 +120,47 @@
 
     <!-- Timer Screen -->
     <string name="timer_title">Safety Timer</string>
-    <string name="timer_desc">Set a timer. When it expires, you\'ll receive a notification reminding you to check in or call for help.</string>
+    <string name="timer_desc">If you do not check in before the timer ends, SafeSteps will send an emergency SMS to your saved contacts.</string>
     <string name="timer_status_ready">Ready to start</string>
     <string name="timer_status_active">Timer running</string>
     <string name="timer_countdown_label">Countdown</string>
-    <string name="timer_duration_label">Duration (minutes): %1$d</string>
+    <string name="timer_duration_label">Timer duration: %1$d min</string>
+    <string name="timer_time_left_label">Time left</string>
     <string name="timer_remaining_time">Time remaining: %1$02d:%2$02d</string>
     <string name="timer_recent_durations">Recent durations</string>
     <string name="timer_recent_duration">%1$d min</string>
     <string name="btn_start_timer">Start Timer</string>
     <string name="btn_stop_timer">Cancel Timer</string>
-    <string name="timer_expired_toast">Safety timer expired. Check-in notification sent.</string>
+    <string name="timer_expired_toast">Safety timer expired. Emergency SMS alert sent.</string>
+    <string name="sms_permission_denied">Automatic emergency SMS cannot be sent without SMS permission.</string>
+    <string name="timer_alert_no_contacts">No emergency contacts saved. Add a contact before relying on the safety timer.</string>
+    <string name="timer_alert_no_valid_contacts">No valid emergency contact phone numbers were found.</string>
+    <string name="timer_alert_sms_ready">Emergency SMS alerts were sent.</string>
+    <string name="timer_alert_share_fallback_title">Share Emergency Alert</string>
+    <string name="timer_expired_dialog_title">Safety timer expired</string>
+    <string name="timer_expired_dialog_body">You did not check in before the timer ended. SafeSteps attempted to alert your emergency contacts.</string>
+    <string name="timer_alert_result_all_sent">Emergency SMS sent to all saved contacts.</string>
+    <string name="timer_alert_result_partial">Emergency SMS sent to %1$d of %2$d contacts.</string>
+    <string name="timer_alert_result_failed">Emergency SMS could not be sent.</string>
+    <string name="timer_alert_result_permission_denied">SMS permission was not granted, so emergency messages could not be sent.</string>
+    <string name="timer_alert_result_attempted">Emergency SMS alert attempted for %1$d contacts.</string>
+    <string name="timer_alert_done">Done</string>
+    <string name="timer_alert_no_contacts_title">No emergency contacts saved</string>
+    <string name="timer_alert_no_contacts_body">Add an emergency contact before relying on the safety timer alert.</string>
+    <string name="timer_alert_no_valid_contacts_body">Your saved contacts do not have valid phone numbers.</string>
+    <string name="timer_alert_open_contacts">Open Contacts</string>
+    <string name="timer_emergency_message_with_location">I may need help. My SafeSteps safety timer ended and I did not check in. My current location is: %1$s</string>
+    <string name="timer_emergency_message_without_location">I may need help. My SafeSteps safety timer ended and I did not check in. My current location is currently unavailable.</string>
 
     <!-- Notifications -->
     <string name="notification_channel_safety_timer_name">Safety Timer Alerts</string>
-    <string name="notification_channel_safety_timer_desc">Check-in alerts from the SafeSteps safety timer.</string>
-    <string name="notification_are_you_safe_title">Are you safe?</string>
-    <string name="notification_are_you_safe_body">Your SafeSteps timer ended. Please check in or contact help if needed.</string>
+    <string name="notification_channel_safety_timer_desc">Emergency SMS result alerts from the SafeSteps safety timer.</string>
+    <string name="notification_are_you_safe_title">Safety timer expired</string>
+    <string name="notification_are_you_safe_body">Emergency alert result is ready.</string>
+    <string name="notification_sms_sent_all">Emergency SMS sent to your saved contacts.</string>
+    <string name="notification_sms_sent_partial">Emergency SMS sent to %1$d of %2$d contacts.</string>
+    <string name="notification_sms_failed">Emergency SMS could not be sent. Open SafeSteps to review.</string>
+    <string name="notification_sms_permission_denied">SMS permission was denied, so emergency alerts could not be sent.</string>
     <string name="edit_contact">Edit contact</string>
     <string name="edit_contact_title">Edit contact</string>
     <string name="btn_save">Save</string>
