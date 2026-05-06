@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.safesteps.app.R
+import com.safesteps.app.ui.components.SafeStepsScreenTitle
 import com.safesteps.app.ui.theme.EmergencyRed
 import com.safesteps.app.ui.theme.SuccessGreen
 import com.safesteps.app.utils.TimerConstants
@@ -109,14 +110,9 @@ fun TimerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
-        Text(
-            text = stringResource(id = R.string.timer_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        SafeStepsScreenTitle(titleRes = R.string.timer_title)
 
         Text(
             text = stringResource(id = R.string.timer_desc),
@@ -128,7 +124,9 @@ fun TimerScreen(
 
         // Circular arc timer
         Box(
-            modifier = Modifier.size(220.dp),
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .size(220.dp),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {

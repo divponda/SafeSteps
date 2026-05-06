@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -71,6 +71,7 @@ import com.safesteps.app.data.model.SafePlace
 import com.safesteps.app.data.model.SafePlaceCategory
 import com.safesteps.app.data.repository.DemoSafePlacesRepository
 import com.safesteps.app.ui.components.SafeStepsCard
+import com.safesteps.app.ui.components.SafeStepsScreenTitle
 import com.safesteps.app.ui.components.StatusPill
 import com.safesteps.app.utils.LocationConstants
 
@@ -149,6 +150,9 @@ fun MapScreen() {
             .background(MaterialTheme.colorScheme.background)
             .padding(dimensionResource(id = R.dimen.spacing_large))
     ) {
+        SafeStepsScreenTitle(titleRes = R.string.safety_map_title)
+        Spacer(modifier = Modifier.height(dimensionResource(id = R.dimen.spacing_medium)))
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -193,11 +197,6 @@ fun MapScreen() {
                     .align(Alignment.TopCenter)
             ) {
                 Column {
-                    Text(
-                        text = stringResource(id = R.string.safety_map_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
                     Text(
                         text = stringResource(id = R.string.safety_map_desc),
                         style = MaterialTheme.typography.bodySmall,
@@ -251,24 +250,6 @@ fun MapScreen() {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center),
                     strokeWidth = dimensionResource(id = R.dimen.spacing_xsmall)
-                )
-            }
-
-            FilledTonalButton(
-                onClick = { refreshCount += 1 },
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(dimensionResource(id = R.dimen.spacing_large)),
-                shape = MaterialTheme.shapes.large
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Place,
-                    contentDescription = null,
-                    modifier = Modifier.size(dimensionResource(id = R.dimen.primary_icon_size))
-                )
-                Text(
-                    text = stringResource(id = R.string.refresh_safe_places),
-                    modifier = Modifier.padding(start = dimensionResource(id = R.dimen.spacing_small))
                 )
             }
         }
@@ -384,7 +365,8 @@ private fun SafePlaceListItem(
         onClick = onPlaceSelected
     ) {
         Row(
-            modifier = Modifier.padding(dimensionResource(id = R.dimen.spacing_large))
+            modifier = Modifier
+                .padding(dimensionResource(id = R.dimen.spacing_medium))
                 .fillMaxWidth(),
             verticalAlignment = Alignment.Top
         ) {
@@ -412,37 +394,18 @@ private fun SafePlaceListItem(
                     .weight(1f)
                     .padding(start = dimensionResource(id = R.dimen.spacing_medium))
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = safePlace.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = safePlaceCategoryName(safePlace.category),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = categoryAccentColor(safePlace.category),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                val categoryLabel = safePlaceCategoryName(safePlace.category)
+                Text(
+                    text = safePlace.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (!safePlace.name.equals(categoryLabel, ignoreCase = true)) {
                     Text(
-                        text = distanceLabel(safePlace.distanceMeters),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                MaterialTheme.shapes.small
-                            )
-                            .padding(
-                                horizontal = dimensionResource(id = R.dimen.spacing_small),
-                                vertical = dimensionResource(id = R.dimen.spacing_xsmall)
-                            )
+                        text = categoryLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = categoryAccentColor(safePlace.category),
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
                 safePlace.address?.let { address ->
@@ -450,10 +413,13 @@ private fun SafePlaceListItem(
                         text = address,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_small))
+                        modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
                     )
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
+                ) {
                     safePlace.rating?.let { rating ->
                         Text(
                             text = stringResource(id = R.string.place_rating, rating),
@@ -478,10 +444,26 @@ private fun SafePlaceListItem(
                         )
                     )
                 }
-                TextButton(
-                    onClick = onNavigate,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
+            }
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(start = dimensionResource(id = R.dimen.spacing_small))
+            ) {
+                Text(
+                    text = distanceLabel(safePlace.distanceMeters),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.shapes.small
+                        )
+                        .padding(
+                            horizontal = dimensionResource(id = R.dimen.spacing_small),
+                            vertical = dimensionResource(id = R.dimen.spacing_xsmall)
+                        )
+                )
+                TextButton(onClick = onNavigate) {
                     Text(text = stringResource(id = R.string.navigate_to_place))
                 }
             }

@@ -76,7 +76,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
 
         val safePlaceTemplates = listOf(
             SafePlaceTemplate(
-                R.string.police_station,
+                R.string.police_station_name,
                 R.string.police_station_desc,
                 SafePlaceCategory.PoliceStation,
                 280.0,
@@ -85,7 +85,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.hospital,
+                R.string.hospital_name,
                 R.string.hospital_desc,
                 SafePlaceCategory.Hospital,
                 -420.0,
@@ -94,7 +94,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.pharmacy,
+                R.string.pharmacy_name,
                 R.string.pharmacy_desc,
                 SafePlaceCategory.Pharmacy,
                 160.0,
@@ -103,7 +103,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.fire_station,
+                R.string.fire_station_name,
                 R.string.fire_station_desc,
                 SafePlaceCategory.FireStation,
                 -650.0,
@@ -112,7 +112,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.public_library,
+                R.string.public_library_name,
                 R.string.public_library_desc,
                 SafePlaceCategory.Library,
                 780.0,
@@ -121,7 +121,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.metro_station,
+                R.string.metro_station_name,
                 R.string.metro_station_desc,
                 SafePlaceCategory.TransitStation,
                 -180.0,
@@ -130,7 +130,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.hotel,
+                R.string.hotel_name,
                 R.string.hotel_desc,
                 SafePlaceCategory.Hotel,
                 920.0,
@@ -139,7 +139,7 @@ class DemoSafePlacesRepository(private val context: Context) : SafePlacesReposit
                 true
             ),
             SafePlaceTemplate(
-                R.string.shopping_center,
+                R.string.shopping_center_name,
                 R.string.shopping_center_desc,
                 SafePlaceCategory.ShoppingCenter,
                 -980.0,

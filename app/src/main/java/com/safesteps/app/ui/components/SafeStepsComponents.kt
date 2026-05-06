@@ -135,6 +135,21 @@ fun SafeStepsSectionTitle(
 }
 
 @Composable
+fun SafeStepsScreenTitle(
+    @StringRes titleRes: Int,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = stringResource(id = titleRes),
+        style = MaterialTheme.typography.headlineMedium,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth()
+    )
+}
+
+@Composable
 fun SafetyStatusCard(
     @StringRes titleRes: Int,
     @StringRes bodyRes: Int,
