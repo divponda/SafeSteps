@@ -16,11 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -67,14 +67,15 @@ fun SafeStepsNavigation() {
         ContactsRepository(context.applicationContext)
     }
     val contacts by contactsRepository.contacts.collectAsState(initial = emptyList())
-    var selectedTimerMinutes by remember {
-        mutableIntStateOf(TimerConstants.DefaultTimerDurationMinutes)
+    
+    var selectedTimerMinutes by rememberSaveable {
+        mutableStateOf(TimerConstants.DefaultTimerDurationMinutes)
     }
-    var remainingTimerSeconds by remember {
-        mutableIntStateOf(TimerConstants.DefaultTimerDurationMinutes * TimerConstants.SecondsPerMinute)
+    var remainingTimerSeconds by rememberSaveable {
+        mutableStateOf(TimerConstants.DefaultTimerDurationMinutes * TimerConstants.SecondsPerMinute)
     }
-    var isTimerRunning by remember { mutableStateOf(false) }
-    var recentTimerDurations by remember {
+    var isTimerRunning by rememberSaveable { mutableStateOf(false) }
+    var recentTimerDurations by rememberSaveable {
         mutableStateOf(emptyList<Int>())
     }
 
