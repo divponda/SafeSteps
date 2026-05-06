@@ -298,17 +298,6 @@ private fun SafePlacesList(
                 Text(text = stringResource(id = R.string.refresh_safe_places))
             }
         }
-        Text(
-            text = if (isLoading) {
-                stringResource(id = R.string.map_status_scanning)
-            } else {
-                stringResource(id = R.string.map_status_ready)
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = dimensionResource(id = R.dimen.spacing_xsmall))
-        )
-
         when {
             isLoading -> {
                 Text(
